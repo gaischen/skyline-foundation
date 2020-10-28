@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/skyline/skyline-foundation/log/appender"
 	"github.com/skyline/skyline-foundation/log/level"
+	"time"
 )
 
 type Logger interface {
@@ -64,21 +65,27 @@ func (l *logger) SetAppender(appender appender.Appender) {
 }
 
 func (l *logger) Debug(args ...interface{}) {
-	fmt.Println(args)
+	setPrefix(args...)
 }
 
 func (l *logger) Info(args ...interface{}) {
-	fmt.Println(args)
+	setPrefix(args...)
 }
 
 func (l *logger) Error(args ...interface{}) {
-	fmt.Println(args)
+	setPrefix(args...)
 }
 
 func (l *logger) Warn(args ...interface{}) {
-	fmt.Println(args)
+	setPrefix(args...)
 }
 
 func (l *logger) Fatal(args ...interface{}) {
-	fmt.Println(args)
+	setPrefix(args...)
+	panic("os out...")
+}
+
+func setPrefix(args ...interface{}) {
+	timeStr := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Println(timeStr, args)
 }
