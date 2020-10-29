@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/skyline/skyline-foundation/log/appender"
 	"github.com/skyline/skyline-foundation/log/level"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type Logger interface {
 }
 
 var initedLogger map[string]Logger
+var mutex sync.Mutex
 
 func init() {
 	initedLogger = make(map[string]Logger)
@@ -31,7 +33,10 @@ func NewLogger(logname string, logLevel level.LogLevel) Logger {
 	if logger, ok := initedLogger[logname]; ok {
 		return logger
 	}
+	defer mutex.Unlock()
+	mutex.Lock()
 	var log Logger = &logger{name: logname,}
+	initedLogger[logname] = log //set to map
 	return log
 }
 
