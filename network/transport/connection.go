@@ -5,6 +5,7 @@ import (
 	"github.com/skyline/skyline-foundation/log/level"
 	"io"
 	"net"
+	"sync/atomic"
 	"time"
 )
 
@@ -13,6 +14,7 @@ const (
 )
 
 var logger log.Logger = log.NewLogger("connection", level.WARN)
+var connId uint32
 
 type connection struct {
 	id uint32 // connection id, unique one process
@@ -45,6 +47,17 @@ func newConnection(addr string) (*connection, error) {
 		return nil, err
 	}
 
+	cnt := &connection{
+		id:         atomic.AddUint32(&connId, 1),
+		conn:       conn,
+		reader:     io.Reader(conn),
+		writer:     io.Writer(conn),
+		localAddr:  conn.LocalAddr().String(),
+		remoteAddr: conn.RemoteAddr().String(),
+	}
+	return cnt, nil
+}
 
-	return nil, nil
+func (conn *connection)recv()()  {
+
 }
