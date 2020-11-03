@@ -1,3 +1,3 @@
-module github.com/skyline/skyline-foundation
+module github.com/vanga-top/skyline-foundation
 
 go 1.14

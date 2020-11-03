@@ -2,8 +2,8 @@ package log
 
 import (
 	"fmt"
-	"github.com/skyline/skyline-foundation/log/appender"
-	"github.com/skyline/skyline-foundation/log/level"
+	"github.com/vanga-top/skyline-foundation/log/appender"
+	"github.com/vanga-top/skyline-foundation/log/level"
 	"sync"
 	"time"
 )

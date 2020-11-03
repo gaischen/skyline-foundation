@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/skyline/skyline-foundation/log/level"
+	"github.com/vanga-top/skyline-foundation/log/level"
 	"testing"
 )
 
