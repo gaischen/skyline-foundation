@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/vanga-top/skyline-foundation/log"
-	"github.com/vanga-top/skyline-foundation/log/level"
 	"io"
 	"net"
 	"sync"
@@ -17,7 +16,6 @@ const (
 	tcpConnectionTimeout = 3 * time.Second
 )
 
-var logger log.Logger = log.NewLogger("connection", level.WARN)
 var connId uint32
 var recvBuf = new(sync.Pool)
 var writeBuf = new(sync.Pool)

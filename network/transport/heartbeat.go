@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,4 +24,22 @@ func newHeartbeat(e *exchanger) *heartbeat {
 	return h
 }
 
+func (h *heartbeat) run() {
+	defer func() {
+		logger.Debug("exchanger heartbeat shutdown...")
+		atomic.AddInt32(&h.e.goroutineNum, -1)
+	}()
+	t := time.NewTicker(h.cronPeriod)
+	for {
+		select {
+		case <-t.C:
+			h.doHeartbeat()
+		case <-h.ctx.Done():
+			return
+		}
+	}
+}
 
+func (h *heartbeat) doHeartbeat() {
+	
+}
