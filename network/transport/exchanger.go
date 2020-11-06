@@ -10,6 +10,7 @@ import (
 type ExchangerCallback = func(exchanger *exchanger) error
 
 const defaultWqLen int64 = 1024
+const maxIovecNum int = 10
 
 type exchanger struct {
 	id        int32
@@ -75,10 +76,63 @@ func (e *exchanger) run() error {
 	atomic.AddInt32(&e.goroutineNum, 2)
 
 	//start
+	go e.loop()
 
 	return nil
 }
 
 func (e *exchanger) loop() {
-	
+	defer func() {
+		if r := recover(); r != nil {
+			atomic.AddInt32(&e.goroutineNum, -1)
+		}
+	}()
+
+	var iovec = make([]*MessageWrapper, maxIovecNum)
+
+	for {
+		select {
+		case data, ok := <-e.writeChan:
+			if !ok {
+				continue
+			}
+			iovec = iovec[:0]
+			iovec = append(iovec, data)
+		LOOP:
+			for i := 0; i < maxIovecNum-1; i++ {
+				select {
+				case data, ok = <-e.writeChan:
+					if !ok {
+						break
+					}
+					iovec = append(iovec, data)
+				default:
+					break LOOP
+				}
+			}
+			errMap := e.writePkg(iovec)
+			if errMap != nil {
+				for pkgId, err := range errMap {
+					e.handleMsgError(pkgId, err)
+				}
+			}
+		case <-e.ctx.Done():
+			if len(e.writeChan) != 0 {
+				continue
+			}
+			e.closeGracefully()
+			return
+		}
+	}
+}
+
+func (e *exchanger) writePkg(messageWrappers []*MessageWrapper) map[uint32]error {
+
+	return nil
+}
+
+func (e *exchanger) handleMsgError(packageId uint32, err error) {}
+
+func (e *exchanger) closeGracefully() {
+
 }
