@@ -41,5 +41,19 @@ func (h *heartbeat) run() {
 }
 
 func (h *heartbeat) doHeartbeat() {
+	if h == nil || h.e == nil || h.e.conn == nil {
+		return
+	}
+	currentTime := time.Now().Unix()
+
+	if (atomic.LoadInt64(&h.e.conn.readLastTime) != 0 && (currentTime-atomic.LoadInt64(&h.e.conn.readLastTime) > int64(h.cronPeriod.Seconds()))) ||
+		(atomic.LoadInt64(&h.e.conn.writeLastTime) != 0 && (currentTime-atomic.LoadInt64(&h.e.conn.writeLastTime) > int64(h.cronPeriod.Seconds()))) {
+		msg := new(Message)
+		msg.Version = uint8(2)
+		msg.Flag = 1
+
+		// 。。。。。send
+
+	}
 
 }
