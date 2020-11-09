@@ -1,7 +1,9 @@
 package transport
 
 import (
+	"bytes"
 	"context"
+	"github.com/pingcap/errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -126,13 +128,143 @@ func (e *exchanger) loop() {
 	}
 }
 
-func (e *exchanger) writePkg(messageWrappers []*MessageWrapper) map[uint32]error {
+func (e *exchanger) isAvailable() bool {
+	select {
+	case <-e.ctx.Done():
+		return false
+	default:
+		return true
+	}
+}
 
+func (e *exchanger) writePkg(messageWrappers []*MessageWrapper) map[uint32]error {
+	var errMap = make(map[uint32]error)
+	if messageWrappers == nil || len(messageWrappers) == 0 {
+		return nil
+	}
+	if !e.isAvailable() {
+		err := ExchangerNotAvailable
+		for _, wrapper := range messageWrappers {
+			errMap[wrapper.msg.PackageId] = err
+		}
+		return errMap
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				logger.Error("error happened when writing pkg,msg:%s", errors.ErrorStack(err))
+			}
+		}
+	}()
+
+	if len(messageWrappers) == 1 {
+		bytes, err := e.message2Byte(messageWrappers[0])
+		if err != nil {
+			errMap[messageWrappers[0].msg.PackageId] = err
+			return errMap
+		}
+		if _, err := e.conn.send(bytes); err != nil {
+			errMap[messageWrappers[0].msg.PackageId] = err
+			return errMap
+		}
+	} else {
+		var buffers []*bytes.Buffer
+		for _, wrapper := range messageWrappers {
+			bytes, err := e.message2Byte(wrapper)
+			if err != nil {
+				errMap[wrapper.msg.PackageId] = err
+				continue
+			}
+			buffers = append(buffers, bytes)
+		}
+		if _, err := e.conn.send(buffers); err != nil {
+			for _, wrapper := range messageWrappers {
+				if errMap[wrapper.msg.PackageId] == nil {
+					errMap[wrapper.msg.PackageId] = err
+				}
+			}
+			return errMap
+		}
+	}
 	return nil
 }
 
-func (e *exchanger) handleMsgError(packageId uint32, err error) {}
+func (e *exchanger) message2Byte(wrapper *MessageWrapper) (*bytes.Buffer, error) {
+	marshalStartTime := time.Now()
+
+	msg := wrapper.msg
+	codec := wrapper.c
+	if msg.Content != nil {
+		if body, err := codec.Write(msg.Content); err != nil {
+			return nil, err
+		} else {
+			if len(body) > e.compressionThreshold {
+				compressed, compressError := e.compression.Compress(body)
+				if compressError == nil {
+					msg.Flag = compressFeature.enable(msg.Flag)
+					body = compressed
+				} else {
+					logger.Error("compress feature msg body failed...", err)
+					msg.Flag = compressFeature.disable(msg.Flag)
+				}
+			} else {
+				msg.Flag = compressFeature.disable(msg.Flag)
+			}
+			msg.Body = body
+		}
+	}
+
+	databytes, err := encodeMsg(msg)
+	if err != nil {
+		return nil, err
+	} else {
+		if wrapper.call != nil {
+			wrapper.call.SerializeTime = time.Now().Sub(marshalStartTime)
+			wrapper.call.SerializeSize = msg.Length
+		}
+	}
+	return databytes, nil
+}
+
+func (e *exchanger) handleMsgError(packageId uint32, err error) {
+	e.minusConcurrencyNum()
+	call := e.removePending(packageId)
+	if call == nil {
+		return
+	}
+	call.Response = nil
+	call.Error = err
+	call.Done <- struct{}{}
+}
+
+func (e *exchanger) removePending(packageId uint32) *NetCall {
+	if e.pendingMap == nil {
+		return nil
+	}
+	if c, ok := e.pendingMap.Load(packageId); ok {
+		e.pendingMap.Delete(packageId)
+		return c.(*NetCall)
+	}
+	return nil
+}
+
+func (e *exchanger) minusConcurrencyNum() int32 {
+	return atomic.AddInt32(&e.concurrencyNum, -1)
+}
 
 func (e *exchanger) closeGracefully() {
+	e.closeOnce.Do(func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		logger.Debug("exchanger start to async close!,concurrence: %d,trying to close asynchronously.", e.concurrencyNum)
+		//close heart beat
+		e.hb.cancel()
+		//close exchanger
+		e.cancel()
 
+		go func() {
+			
+		}()
+	})
 }

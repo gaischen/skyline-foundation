@@ -31,8 +31,15 @@ type Provider struct {
 }
 
 type NetCall struct {
-}
+	SerializeTime   time.Duration
+	DeSerializeTime time.Duration
+	SerializeSize   uint32
+	DeSerializeSize uint32
 
+	Done     chan struct{}
+	Error    error
+	Response interface{}
+}
 
 type MessageWrapper struct {
 	msg  *Message

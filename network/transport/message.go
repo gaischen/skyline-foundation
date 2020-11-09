@@ -89,7 +89,7 @@ func decodeTeslaMsg(buf *ByteBuf, length uint32) (*Message, error) {
 
 //encode  msg to byte array,you should encode body data before call this method!
 //encode body data use codec interface
-func encodeTeslaMsg(msg *Message) (*bytes.Buffer, error) {
+func encodeMsg(msg *Message) (*bytes.Buffer, error) {
 
 	var (
 		buf    *bytes.Buffer
