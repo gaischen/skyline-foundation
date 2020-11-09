@@ -79,7 +79,7 @@ func (e *exchanger) run() error {
 
 	//start
 	go e.loop()
-
+	go e.handleReceivePackage()
 	return nil
 }
 
@@ -264,7 +264,55 @@ func (e *exchanger) closeGracefully() {
 		e.cancel()
 
 		go func() {
-			
+			retryTimes := 0
+			t := time.NewTicker(time.Second)
+			for {
+				select {
+				case <-t.C:
+					if e.isClosed() {
+						break
+					}
+					if e.isClosed() || e.conn == nil {
+						return
+					}
+					concurrencyNum := atomic.LoadInt32(&e.concurrencyNum)
+					if concurrencyNum <= 0 || retryTimes > 60 {
+						e.pendingMap.Range(func(key, value interface{}) bool {
+							if call, ok := value.(*NetCall); ok {
+								call.Error = errors.New("exchanger force closed!")
+								call.Done <- struct{}{}
+							}
+							return true
+						})
+						e.gc()
+					}
+					retryTimes++
+				case <-e.closeDone:
+					break
+				}
+			}
 		}()
 	})
+}
+
+func (e *exchanger) isClosed() bool {
+	select {
+	case <-e.closeDone:
+		return true
+	default:
+		return false
+	}
+}
+
+func (e *exchanger) gc() {
+	e.once.Do(func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		close(e.closeDone)
+		e.conn.close()
+	})
+}
+
+func (e *exchanger) handleReceivePackage() {
+	
 }
