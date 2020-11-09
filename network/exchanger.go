@@ -1,4 +1,4 @@
-package transport
+package network
 
 import (
 	"bytes"
@@ -93,7 +93,7 @@ func (e *exchanger) loop() {
 		}
 	}()
 
-	var iovec = make([]*MessageWrapper, maxIovecNum)
+	var iorecv = make([]*MessageWrapper, maxIovecNum)
 
 	for {
 		select {
@@ -101,8 +101,8 @@ func (e *exchanger) loop() {
 			if !ok {
 				continue
 			}
-			iovec = iovec[:0]
-			iovec = append(iovec, data)
+			iorecv = iorecv[:0]
+			iorecv = append(iorecv, data)
 		LOOP:
 			for i := 0; i < maxIovecNum-1; i++ {
 				select {
@@ -110,12 +110,12 @@ func (e *exchanger) loop() {
 					if !ok {
 						break
 					}
-					iovec = append(iovec, data)
+					iorecv = append(iorecv, data)
 				default:
 					break LOOP
 				}
 			}
-			errMap := e.writePkg(iovec)
+			errMap := e.writePkg(iorecv)
 			if errMap != nil {
 				for pkgId, err := range errMap {
 					e.handleMsgError(pkgId, err)

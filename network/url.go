@@ -1,4 +1,4 @@
-package transport
+package network
 
 type URL struct {
 	host               string

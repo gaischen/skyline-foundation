@@ -1,4 +1,4 @@
-package transport
+package network
 
 type networkFeature struct {
 	m byte

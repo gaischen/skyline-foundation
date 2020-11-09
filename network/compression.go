@@ -1,4 +1,4 @@
-package transport
+package network
 
 type compression interface {
 	DeCompress(in []byte) ([]byte, error)
