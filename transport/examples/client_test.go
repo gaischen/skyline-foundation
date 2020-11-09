@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -27,9 +28,22 @@ func TestClientConnect(t *testing.T) {
 	}
 	c.reader = io.Reader(conn)
 	c.conn = conn
+	c.isAvailable = true
 	go c.handlerReceive()
 	go c.handleMsgChan()
+	go sendTick(c)
 	c.wg.Wait()
+}
+
+func sendTick(c *Client) {
+	t := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-t.C:
+			str := "go tick " + strconv.Itoa(int(c.pkgId))
+			c.send(build(c, str))
+		}
+	}
 }
 
 type Client struct {
@@ -43,6 +57,13 @@ type Client struct {
 	closeOnce   sync.Once
 	msgChan     chan *Message
 	pkgId       uint32
+	isAvailable bool
+}
+
+func (c *Client) send(byt []byte) {
+	if c.isAvailable {
+		c.conn.Write(byt)
+	}
 }
 
 func (c *Client) connect() (net.Conn, error) {
@@ -86,6 +107,7 @@ func (c *Client) closeConnection() {
 		}
 	}()
 	c.closeOnce.Do(func() {
+		c.isAvailable = false
 		c.wg.Done()
 		c.conn.Close()
 	})
@@ -97,13 +119,20 @@ func (c *Client) handleMsgChan() {
 		case msg := <-c.msgChan:
 			fmt.Println(msg)
 			if msg.flag == 0 {
-				rtn := &Message{flag: 1, id: atomic.AddUint32(&c.pkgId, 1), value: "go back"}
-				byt := MessageToBytes(rtn)
-				rtn.length = len(byt)
-				c.conn.Write(byt)
+				c.conn.Write(build(c, "go back"))
 			}
+		case <-c.ctx.Done():
+			fmt.Println("close chanel")
+			return
 		default:
 			continue
 		}
 	}
+}
+
+func build(c *Client, value string) []byte {
+	rtn := &Message{flag: 1, id: atomic.AddUint32(&c.pkgId, 1), value: value}
+	byt := MessageToBytes(rtn)
+	rtn.length = len(byt)
+	return byt
 }

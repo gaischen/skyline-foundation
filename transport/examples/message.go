@@ -6,10 +6,10 @@ import (
 )
 
 type Message struct {
+	length int
 	id     uint32
 	flag   int
 	value  string
-	length int
 }
 
 var sizeOfMyStruct = int(unsafe.Sizeof(Message{}))
