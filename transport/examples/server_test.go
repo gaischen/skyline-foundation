@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"sync/atomic"
@@ -31,9 +32,7 @@ func (s *Server) start() {
 			return
 		}
 		wel := &Message{id: atomic.AddUint32(&s.pkgId, 1), value: "welcome hello..."}
-		byt := MessageToBytes(wel)
-		wel.length = len(byt)
-		fmt.Println("send length:", wel.length)
+		byt := Msg2Bytes(wel)
 		conn.Write(byt)
 		go s.handleConnection(conn)
 	}
@@ -45,13 +44,21 @@ func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-		buffer := make([]byte, 1024)
-		recvLen, err := conn.Read(buffer)
+		buffer := make([]byte, 4)
+		_, err := conn.Read(buffer)
+		length := binary.BigEndian.Uint32(buffer[:])
+
+		buf2 := make([]byte, length-4)
+		_, err = conn.Read(buf2)
+
+		buf3 := make([]byte, length)
+		buf3 = append(buffer, buf2...)
+
 		if err != nil {
 			fmt.Println("Read error: ", err, clientAddr)
 			return
 		}
-		msg := BytesToMessage(buffer[:recvLen])
-		fmt.Println("Client message: ", msg)
+
+		fmt.Println("Client message: ", Bytes2Msg(buf3))
 	}
 }

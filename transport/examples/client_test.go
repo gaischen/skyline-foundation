@@ -94,7 +94,7 @@ LOOP:
 			if errors.Cause(err) == io.EOF {
 				c.cancel()
 			}
-			msg := BytesToMessage(b[:l])
+			msg := Bytes2Msg(b[:l])
 			c.msgChan <- msg
 		}
 	}
@@ -131,8 +131,7 @@ func (c *Client) handleMsgChan() {
 }
 
 func build(c *Client, value string) []byte {
-	rtn := &Message{flag: 1, id: atomic.AddUint32(&c.pkgId, 1), value: value}
-	byt := MessageToBytes(rtn)
-	rtn.length = len(byt)
+	rtn := &Message{flag: uint32(1), id: atomic.AddUint32(&c.pkgId, 1), value: value}
+	byt := Msg2Bytes(rtn)
 	return byt
 }

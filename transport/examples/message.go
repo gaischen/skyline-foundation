@@ -1,29 +1,35 @@
 package examples
 
 import (
-	"reflect"
-	"unsafe"
+	"bytes"
+	"encoding/binary"
 )
 
 type Message struct {
-	length int
+	length uint32
 	id     uint32
-	flag   int
+	flag   uint32
 	value  string
 }
 
-var sizeOfMyStruct = int(unsafe.Sizeof(Message{}))
-
-func MessageToBytes(s *Message) []byte {
-	var x reflect.SliceHeader
-	x.Len = sizeOfMyStruct
-	x.Cap = sizeOfMyStruct
-	x.Data = uintptr(unsafe.Pointer(s))
-	return *(*[]byte)(unsafe.Pointer(&x))
+func Msg2Bytes(m *Message) []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.BigEndian, uint32(0))
+	binary.Write(buf, binary.BigEndian, m.id)
+	binary.Write(buf, binary.BigEndian, m.flag)
+	buf.WriteString(m.value)
+	bytes := buf.Bytes()
+	length := len(buf.Bytes())
+	binary.BigEndian.PutUint32(bytes[0:4], uint32(length))
+	return bytes
 }
 
-func BytesToMessage(b []byte) *Message {
-	return (*Message)(unsafe.Pointer(
-		(*reflect.SliceHeader)(unsafe.Pointer(&b)).Data,
-	))
+func Bytes2Msg(data []byte) *Message {
+	msg := &Message{}
+	msg.length = binary.BigEndian.Uint32(data[0:4])
+	msg.id = binary.BigEndian.Uint32(data[4:8])
+	msg.flag = binary.BigEndian.Uint32(data[8:12])
+	le := len(data)
+	msg.value = string(data[12:le])
+	return msg
 }
