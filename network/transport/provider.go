@@ -33,12 +33,14 @@ type Provider struct {
 type NetCall struct {
 	SerializeTime   time.Duration
 	DeSerializeTime time.Duration
+	Timeout         time.Duration
 	SerializeSize   uint32
 	DeSerializeSize uint32
 
 	Done     chan struct{}
 	Error    error
 	Response interface{}
+	Invocation *Invocation
 }
 
 type MessageWrapper struct {

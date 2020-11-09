@@ -61,7 +61,7 @@ type Message struct {
 
 //parse  msg from byte array,not decode body data,
 //decode body data use codec interface
-func decodeTeslaMsg(buf *ByteBuf, length uint32) (*Message, error) {
+func decodeMsg(buf *ByteBuf, length uint32) (*Message, error) {
 	data := buf.Bytes()
 	msg := acquireMessageObject() //todo 这边会依赖到connection里面的方法
 	msg.Length = length

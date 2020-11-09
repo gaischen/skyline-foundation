@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"github.com/pingcap/errors"
+	"io"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,6 +15,7 @@ type ExchangerCallback = func(exchanger *exchanger) error
 
 const defaultWqLen int64 = 1024
 const maxIovecNum int = 10
+const flagSerializationMask uint8 = 0x07
 
 type exchanger struct {
 	id        int32
@@ -314,5 +317,110 @@ func (e *exchanger) gc() {
 }
 
 func (e *exchanger) handleReceivePackage() {
-	
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("error handle receice package...", r)
+		}
+		atomic.AddInt32(&e.goroutineNum, -1)
+	}()
+
+	for {
+		if e.isClosed() {
+			break
+		}
+		bufLen := 0
+		var buf *ByteBuf
+		var err error
+		if buf, bufLen, err = e.conn.recv(); err != nil {
+			if netErr, ok := errors.Cause(err).(net.Error); ok && netErr.Timeout() {
+				logger.Debug("net err or timeout...")
+				continue
+			}
+			if errors.Cause(err) == io.EOF {
+				err = nil
+				break
+			}
+			break
+		}
+
+		if bufLen == 0 {
+			continue
+		}
+
+		msg, err := decodeMsg(buf, uint32(bufLen))
+
+		if err != nil {
+			logger.Error("error decode msg from byte..")
+			continue
+		}
+
+		if compressFeature.isEnable(msg.Flag) {
+			body, err := e.compression.DeCompress(msg.Body)
+			if err != nil {
+				continue
+			} else {
+				msg.Body = body
+			}
+			msg.ContentLength = uint32(len(body))
+			msg.Length = msg.ContentLength + 18
+			msg.Flag = msg.Flag & flagSerializationMask
+		}
+
+		if heartbeatFeature.isEnable(msg.Flag) {
+			continue
+		}
+
+		c := codecsMap.getCodec("json")
+		if c == nil {
+			continue
+		}
+
+		//decode
+		//c.Read(msg.Body,result)
+
+		call := e.removePending(msg.PackageId)
+		//num := e.minusConcurrencyNum()
+
+		if call == nil {
+			continue
+		}
+
+		call.Done <- struct{}{}
+		releaseMsgObj(msg)
+	}
+}
+
+func releaseMsgObj(msg *Message) {
+
+}
+
+func (e *exchanger) invoke(call *NetCall, oneway bool) (uint32, error) {
+	if call.Invocation == nil {
+		return 0, errors.New("NIL INVOCATION...")
+	}
+	msg := &Message{}
+	pkgId := atomic.AddUint32(&(e.seqGen), 1)
+	msg.PackageId = pkgId
+
+	if !oneway {
+		e.addPending(pkgId, call)
+	}
+
+	t := time.NewTicker(call.Timeout)
+	select {
+	case e.writeChan <- &MessageWrapper{msg: msg, call: call}:
+		e.increaseConcurrencyNum()
+	case <-t.C:
+		return 0, errors.New("write chan is full")
+
+	}
+	return pkgId, nil
+}
+
+func (e *exchanger) addPending(id uint32, call *NetCall) {
+	e.pendingMap.Store(id, call)
+}
+
+func (e *exchanger) increaseConcurrencyNum() int32 {
+	return atomic.AddInt32(&e.concurrencyNum, 1)
 }
