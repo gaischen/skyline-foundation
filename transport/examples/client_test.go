@@ -31,17 +31,19 @@ func TestClientConnect(t *testing.T) {
 	c.isAvailable = true
 	go c.handlerReceive()
 	go c.handleMsgChan()
-	go sendTick(c)
+	go c.heartbeat()
 	c.wg.Wait()
 }
 
-func sendTick(c *Client) {
+func (c *Client) heartbeat() {
 	t := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-t.C:
 			str := "go tick " + strconv.Itoa(int(c.pkgId))
 			c.send(build(c, str))
+		case <-c.ctx.Done():
+			return
 		}
 	}
 }

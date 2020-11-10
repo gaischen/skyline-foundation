@@ -31,9 +31,12 @@ func (s *Server) start() {
 			fmt.Println("Accept error: ", err)
 			return
 		}
-		wel := &Message{id: atomic.AddUint32(&s.pkgId, 1), value: "welcome hello..."}
+		wel := &Message{id: atomic.AddUint32(&s.pkgId, 1), value: "say hello...", flag: uint32(1)}
 		byt := Msg2Bytes(wel)
-		conn.Write(byt)
+		_, err = conn.Write(byt)
+		if err != nil {
+			return
+		}
 		go s.handleConnection(conn)
 	}
 }
