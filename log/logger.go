@@ -92,5 +92,5 @@ func (l *logger) Fatal(args ...interface{}) {
 
 func setPrefix(args ...interface{}) {
 	timeStr := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Sprintf(timeStr, args)
+	fmt.Println(timeStr, args)
 }

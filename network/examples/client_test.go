@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/vanga-top/skyline-foundation/log"
+	"github.com/vanga-top/skyline-foundation/log/level"
 	"io"
 	"net"
 	"strconv"
@@ -12,6 +14,8 @@ import (
 	"testing"
 	"time"
 )
+
+var logger log.Logger = log.NewLogger("net_example", level.ERROR)
 
 func TestClientConnect(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
@@ -71,10 +75,10 @@ func (c *Client) send(byt []byte) {
 func (c *Client) connect() (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", "127.0.0.1:8080", time.Second*3)
 	if err != nil {
-		fmt.Println("error in connection", err)
+		logger.Debug("error in connection", err)
 		return nil, err
 	}
-	fmt.Println("connecting server with client name:", c.name)
+	logger.Debug("connecting server with client name:", c.name)
 	c.wg.Add(1)
 	return conn, err
 }
@@ -85,16 +89,18 @@ LOOP:
 		select {
 		case <-c.ctx.Done():
 			c.closeConnection()
-			fmt.Println("close chanel...")
+			logger.Debug("close chanel...")
 			break LOOP
 		default:
 			b := make([]byte, 1024)
 			l, err := c.conn.Read(b)
 			if err != nil {
-				fmt.Println("read chan error", err)
+				logger.Debug("read chan error", err)
 			}
 			if errors.Cause(err) == io.EOF {
 				c.cancel()
+				logger.Debug("read IO EOF of chan..")
+				return
 			}
 			msg := Bytes2Msg(b[:l])
 			c.msgChan <- msg
@@ -105,7 +111,7 @@ LOOP:
 func (c *Client) closeConnection() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("close error...", r)
+			logger.Debug("close error...", r)
 		}
 	}()
 	c.closeOnce.Do(func() {
@@ -124,7 +130,7 @@ func (c *Client) handleMsgChan() {
 				c.conn.Write(build(c, "go back"))
 			}
 		case <-c.ctx.Done():
-			fmt.Println("close chanel")
+			logger.Debug("close chanel")
 			return
 		default:
 			continue

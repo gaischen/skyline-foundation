@@ -6,10 +6,10 @@ import (
 )
 
 type Message struct {
-	length uint32
-	id     uint32
-	flag   uint32
-	value  string
+	length uint32 `json:"length"`
+	id     uint32 `json:"id"`
+	flag   uint32 `json:"flag"`
+	value  string `json:"value"`
 }
 
 func Msg2Bytes(m *Message) []byte {
