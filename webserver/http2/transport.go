@@ -12,6 +12,12 @@ type controlBuffer struct {
 	backlog []item
 }
 
+func newControlBuffer() *controlBuffer {
+	return &controlBuffer{
+		c: make(chan item, 1),
+	}
+}
+
 type transportState int
 
 const (
@@ -21,3 +27,5 @@ const (
 	draining
 )
 
+type ServerTransport interface {
+}
