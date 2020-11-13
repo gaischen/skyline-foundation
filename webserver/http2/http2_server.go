@@ -82,17 +82,48 @@ func newHttp2Server(conn net.Conn, config *ServerConfig) (_ ServerTransport, err
 	var buf bytes.Buffer
 
 	server := &http2Server{
-		ctx:        context.Background(),
-		conn:       conn,
-		remoteAddr: conn.RemoteAddr(),
-		localAddr:  conn.LocalAddr(),
-		authInfo:   config.AuthInfo,
-		framer:     framer,
-		hBuf:       &buf,
-		hEnc:       hpack.NewEncoder(&buf),
-		maxStreams: maxStreams,
-		controlBuf:newControlBuffer(),
+		ctx:            context.Background(),
+		conn:           conn,
+		remoteAddr:     conn.RemoteAddr(),
+		localAddr:      conn.LocalAddr(),
+		authInfo:       config.AuthInfo,
+		framer:         framer,
+		hBuf:           &buf,
+		hEnc:           hpack.NewEncoder(&buf),
+		maxStreams:     maxStreams,
+		controlBuf:     newControlBuffer(),
+		fc:             &transportInFlow{limit: initialConnWindowSize},
+		sendQuotaPool:  newQuotaPool(defaultWindowSize),
+		state:          reachable,
+		writableChan:   make(chan int, 1),
+		shutdownChan:   make(chan struct{}),
+		activeStreams:  make(map[uint32]*Stream),
+		streamSenQuota: defaultWindowSize,
+		kp:             kp,
 	}
 
+	go server.controller()
+	go server.keepalive()
+	server.writableChan <- 0
 	return server, nil
+}
+
+func (s *http2Server) controller() {
+	for {
+		select {
+		case i := <-s.controlBuf.get():
+			s.controlBuf.load()
+			select {
+			case <-s.writableChan:
+				switch i := i.(type) {
+					
+				}
+			}
+		}
+	}
+
+}
+
+func (s *http2Server) keepalive() {
+
 }

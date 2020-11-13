@@ -18,6 +18,23 @@ func newControlBuffer() *controlBuffer {
 	}
 }
 
+func (b *controlBuffer) get() <-chan item {
+	return b.c
+}
+
+func (b *controlBuffer) load() {
+	b.mu.Lock()
+	if len(b.backlog) > 0 {
+		select {
+		case b.c <- b.backlog[0]:
+			b.backlog[0] = nil
+			b.backlog = b.backlog[1:]
+		default:
+		}
+	}
+	b.mu.Unlock()
+}
+
 type transportState int
 
 const (
