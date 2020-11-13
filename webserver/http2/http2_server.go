@@ -116,7 +116,14 @@ func (s *http2Server) controller() {
 			select {
 			case <-s.writableChan:
 				switch i := i.(type) {
-					
+				case *windowUpdate:
+					s.framer.writeWindowUpdate(true, i.streamId, i.increment)
+				case *settings:
+					if i.ack {
+						s.framer.writeSettingsAck(true)
+						s.applySetting(i.ss)
+					}
+
 				}
 			}
 		}
@@ -126,4 +133,14 @@ func (s *http2Server) controller() {
 
 func (s *http2Server) keepalive() {
 
+}
+
+func (s *http2Server) applySetting(ss []http2.Setting) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, s := range ss {
+		if s.ID == http2.SettingInitialWindowSize {
+			
+		}
+	}
 }

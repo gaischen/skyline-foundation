@@ -1,6 +1,7 @@
 package http2
 
 import (
+	"golang.org/x/net/http2"
 	"sync"
 	"time"
 )
@@ -37,4 +38,22 @@ func newQuotaPool(q int) *quotaPool {
 	}
 
 	return qb
+}
+
+type windowUpdate struct {
+	streamId  uint32
+	increment uint32
+}
+
+func (*windowUpdate) item() {
+
+}
+
+type settings struct {
+	ack bool
+	ss  []http2.Setting
+}
+
+func (*settings) item() {
+
 }

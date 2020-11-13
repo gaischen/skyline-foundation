@@ -50,3 +50,13 @@ func (f *framer) writeWindowUpdate(forceFlush bool, streamID, incr uint32) error
 	}
 	return nil
 }
+
+func (f *framer) writeSettingsAck(forceFlush bool) error {
+	if err := f.fr.WriteSettingsAck(); err != nil {
+		return err
+	}
+	if forceFlush {
+		f.writer.Flush()
+	}
+	return nil
+}
