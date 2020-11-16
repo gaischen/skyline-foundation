@@ -138,9 +138,11 @@ func (s *http2Server) keepalive() {
 func (s *http2Server) applySetting(ss []http2.Setting) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, s := range ss {
-		if s.ID == http2.SettingInitialWindowSize {
-			
+	for _, set := range ss {
+		if set.ID == http2.SettingInitialWindowSize {
+			for _, stream := range s.activeStreams {
+
+			}
 		}
 	}
 }
