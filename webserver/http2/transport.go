@@ -46,3 +46,17 @@ const (
 
 type ServerTransport interface {
 }
+
+type clientTransport interface {
+}
+
+type recvBuffer struct {
+	c       chan recvMsg
+	mu      sync.Mutex
+	backlog []recvMsg
+}
+
+type recvMsg struct {
+	data []byte
+	err  error
+}

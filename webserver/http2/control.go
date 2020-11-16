@@ -57,3 +57,13 @@ type settings struct {
 func (*settings) item() {
 
 }
+
+type inFlow struct {
+	//limit pending data
+	limit uint32
+	mu    sync.Mutex
+	//被接收但没有被消费
+	pendingData uint32
+	//被消费但没有发送给对端
+	pendingUpdate uint32
+}
