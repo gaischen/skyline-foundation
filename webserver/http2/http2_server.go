@@ -34,10 +34,10 @@ type http2Server struct {
 	fc            *transportInFlow //针对输入流的控制
 	sendQuotaPool *quotaPool       //输出流控制
 
-	mu             sync.Mutex
-	state          transportState
-	activeStreams  map[uint32]*Stream
-	streamSenQuota uint32
+	mu              sync.Mutex
+	state           transportState
+	activeStreams   map[uint32]*Stream
+	streamSendQuota uint32
 
 	activity uint32
 	kp       keepalive.ServerParameters
@@ -82,24 +82,24 @@ func newHttp2Server(conn net.Conn, config *ServerConfig) (_ ServerTransport, err
 	var buf bytes.Buffer
 
 	server := &http2Server{
-		ctx:            context.Background(),
-		conn:           conn,
-		remoteAddr:     conn.RemoteAddr(),
-		localAddr:      conn.LocalAddr(),
-		authInfo:       config.AuthInfo,
-		framer:         framer,
-		hBuf:           &buf,
-		hEnc:           hpack.NewEncoder(&buf),
-		maxStreams:     maxStreams,
-		controlBuf:     newControlBuffer(),
-		fc:             &transportInFlow{limit: initialConnWindowSize},
-		sendQuotaPool:  newQuotaPool(defaultWindowSize),
-		state:          reachable,
-		writableChan:   make(chan int, 1),
-		shutdownChan:   make(chan struct{}),
-		activeStreams:  make(map[uint32]*Stream),
-		streamSenQuota: defaultWindowSize,
-		kp:             kp,
+		ctx:             context.Background(),
+		conn:            conn,
+		remoteAddr:      conn.RemoteAddr(),
+		localAddr:       conn.LocalAddr(),
+		authInfo:        config.AuthInfo,
+		framer:          framer,
+		hBuf:            &buf,
+		hEnc:            hpack.NewEncoder(&buf),
+		maxStreams:      maxStreams,
+		controlBuf:      newControlBuffer(),
+		fc:              &transportInFlow{limit: initialConnWindowSize},
+		sendQuotaPool:   newQuotaPool(defaultWindowSize),
+		state:           reachable,
+		writableChan:    make(chan int, 1),
+		shutdownChan:    make(chan struct{}),
+		activeStreams:   make(map[uint32]*Stream),
+		streamSendQuota: defaultWindowSize,
+		kp:              kp,
 	}
 
 	go server.controller()
@@ -141,8 +141,12 @@ func (s *http2Server) applySetting(ss []http2.Setting) {
 	for _, set := range ss {
 		if set.ID == http2.SettingInitialWindowSize {
 			for _, stream := range s.activeStreams {
-
+				stream.sendQuotaPool.add(int(set.Val) - int(s.streamSendQuota))
 			}
+			s.streamSendQuota = set.Val
+		}
+		if set.ID == http2.SettingMaxConcurrentStreams {
+			s.maxStreams = set.Val
 		}
 	}
 }

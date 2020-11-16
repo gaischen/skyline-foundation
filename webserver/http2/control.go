@@ -36,8 +36,30 @@ func newQuotaPool(q int) *quotaPool {
 	} else {
 		qb.quota = q
 	}
-
 	return qb
+}
+
+func (qp *quotaPool) add(v int) {
+	qp.mu.Lock()
+	defer qp.mu.Unlock()
+	select {
+	case n := <-qp.c:
+		qp.quota += n
+	default:
+	}
+	qp.quota += v
+	if qp.quota <= 0 {
+		return
+	}
+	select {
+	case qp.c <- qp.quota:
+		qp.quota = 0
+	default:
+	}
+}
+
+func (qp *quotaPool) acquire() <-chan int {
+	return qp.c
 }
 
 type windowUpdate struct {

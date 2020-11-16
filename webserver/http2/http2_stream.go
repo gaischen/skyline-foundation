@@ -2,7 +2,9 @@ package http2
 
 import (
 	"context"
+	"github.com/vanga-top/skyline-foundation/webserver/codes"
 	"github.com/vanga-top/skyline-foundation/webserver/metadata"
+	"golang.org/x/net/http2"
 	"io"
 	url2 "net/url"
 	"sync"
@@ -33,7 +35,10 @@ type Stream struct {
 	headerOK         bool
 	state            streamState
 	headerDone       bool //headerchan close
-	
+	statusCode       codes.Code
+	statusDesc       string
+	rstStream        bool //是否发送RST_STREAM FRAME到server
+	rstError         http2.ErrCode
 }
 
 type StreamExtra struct {
