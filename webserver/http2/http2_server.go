@@ -11,6 +11,7 @@ import (
 	"math"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -155,7 +156,54 @@ func (s *http2Server) controller() {
 }
 
 func (s *http2Server) keepalive() {
+	p := &ping{}
+	var pingSent bool
+	keepalive := time.NewTimer(s.kp.Time)
+	defer func() {
+		if !keepalive.Stop() {
+			<-keepalive.C
+		}
+	}()
+	for {
+		select {
+		case <-keepalive.C:
+			if atomic.CompareAndSwapUint32(&s.activity, 1, 0) {
+				pingSent = false
+				keepalive.Reset(s.kp.Time)
+				continue
+			}
+			if pingSent {
+				s.Close()
+				keepalive.Reset(time.Duration(math.MaxInt64))
+				return
+			}
+			pingSent = true
+			s.controlBuf.put(p)
+			//等待ping的buffer
+			keepalive.Reset(s.kp.Timeout)
+		case <-s.shutdownChan:
+			return
+		}
+	}
+}
 
+func (s *http2Server) Close() (err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.state == closing {
+		return errors.New("transport close() has bean called... ")
+	}
+	s.state = closing
+	streams := s.activeStreams
+	s.activeStreams = nil
+	close(s.shutdownChan)
+	err = s.conn.Close()
+	for _, stream := range streams {
+		if stream.cancel != nil {
+			stream.cancel()
+		}
+	}
+	return
 }
 
 func (s *http2Server) applySetting(ss []http2.Setting) {

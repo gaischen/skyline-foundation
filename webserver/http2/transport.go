@@ -35,6 +35,20 @@ func (b *controlBuffer) load() {
 	b.mu.Unlock()
 }
 
+func (b *controlBuffer) put(r item) {
+	b.mu.Lock()
+	if len(b.backlog) == 0 {
+		select {
+		case b.c <- r:
+			b.mu.Unlock()
+			return
+		default:
+		}
+	}
+	b.backlog = append(b.backlog, r)
+	b.mu.Unlock()
+}
+
 type transportState int
 
 const (
