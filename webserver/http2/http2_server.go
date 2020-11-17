@@ -122,13 +122,36 @@ func (s *http2Server) controller() {
 					if i.ack {
 						s.framer.writeSettingsAck(true)
 						s.applySetting(i.ss)
+					} else {
+						s.framer.writeSettings(true, i.ss...)
 					}
-
+				case *resetStream:
+					s.framer.writeRSTStream(true, i.streamId, i.code)
+				case *goAway:
+					s.mu.Lock()
+					if s.state == closing {
+						s.mu.Unlock()
+						return
+					}
+					sid := s.maxStreamID
+					s.state = draining
+					s.mu.Unlock()
+					s.framer.writeGoAway(true, sid, http2.ErrCodeNo, nil)
+				case *flushIO:
+					s.framer.flushWrite()
+				case *ping:
+					s.framer.writePing(true, i.ack, i.data)
+				default:
 				}
+				s.writableChan <- 0
+				continue
+			case <-s.shutdownChan:
+				return
 			}
+		case <-s.shutdownChan:
+			return
 		}
 	}
-
 }
 
 func (s *http2Server) keepalive() {

@@ -80,6 +80,42 @@ func (*settings) item() {
 
 }
 
+type resetStream struct {
+	streamId uint32
+	code     http2.ErrCode
+}
+
+func (rs *resetStream) item() {
+
+}
+
+type goAway struct {
+	code      http2.ErrCode
+	debugData []byte
+	headsUp   bool
+	closeCoon bool
+}
+
+func (*goAway) item() {
+
+}
+
+type flushIO struct {
+}
+
+func (*flushIO) item() {
+
+}
+
+type ping struct {
+	ack  bool
+	data [8]byte
+}
+
+func (*ping) item() {
+
+}
+
 type inFlow struct {
 	//limit pending data
 	limit uint32

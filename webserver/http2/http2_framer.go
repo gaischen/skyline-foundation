@@ -60,3 +60,37 @@ func (f *framer) writeSettingsAck(forceFlush bool) error {
 	}
 	return nil
 }
+
+func (f *framer) writeRSTStream(forceFlush bool, streamID uint32, code http2.ErrCode) error {
+	if err := f.fr.WriteRSTStream(streamID, code); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeGoAway(forceFlush bool, maxStreamID uint32, code http2.ErrCode, debugData []byte) error {
+	if err := f.fr.WriteGoAway(maxStreamID, code, debugData); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) flushWrite() error {
+	return f.writer.Flush()
+}
+
+func (f *framer) writePing(forceFlush, ack bool, data [8]byte) error {
+	if err := f.fr.WritePing(ack, data); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
