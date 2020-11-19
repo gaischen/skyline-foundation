@@ -94,3 +94,7 @@ func (f *framer) writePing(forceFlush, ack bool, data [8]byte) error {
 	}
 	return nil
 }
+
+func (f *framer) readFrame() (http2.Frame, error) {
+	return f.fr.ReadFrame()
+}

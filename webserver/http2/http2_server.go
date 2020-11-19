@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/vanga-top/skyline-foundation/webserver/codes"
 	"github.com/vanga-top/skyline-foundation/webserver/credentials"
 	"github.com/vanga-top/skyline-foundation/webserver/keepalive"
+	"github.com/vanga-top/skyline-foundation/webserver/metadata"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
+	"io"
 	"math"
 	"net"
 	"sync"
@@ -43,6 +46,99 @@ type http2Server struct {
 	activity uint32
 	kp       keepalive.ServerParameters
 	idle     time.Time
+}
+
+func (s *http2Server) SetId(id string) {
+	panic("implement me")
+}
+
+func (s *http2Server) HandleStream(handle func(stream *Stream)) {
+	frame, err := s.framer.readFrame()
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
+		s.Close()
+		return
+	}
+	if err != nil {
+		s.Close()
+		return
+	}
+
+	//标记为活跃流
+	atomic.StoreUint32(&s.activity, 1)
+	sf, ok := frame.(*http2.SettingsFrame)
+	//第一个必须是setting
+	if !ok {
+		s.Close()
+		return
+	}
+	s.handleSettings(sf)
+
+	for {
+		frame, err := s.framer.readFrame()
+		atomic.StoreUint32(&s.activity, 1)
+		if err != nil {
+			if se, ok := err.(http2.StreamError); ok {
+				s.mu.Lock()
+				stream := s.activeStreams[se.StreamID]
+				s.mu.Unlock()
+				if stream != nil {
+					s.closeStream(stream)
+				}
+				s.controlBuf.put(&resetStream{se.StreamID, se.Code})
+				continue
+			}
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				s.Close()
+				return
+			}
+			s.Close()
+			return
+		}
+		switch frame := frame.(type) {
+		case *http2.MetaHeadersFrame:
+
+		case *http2.DataFrame:
+			s.handleData(frame)
+		}
+	}
+
+}
+
+func (s *http2Server) handleSettings(frame *http2.SettingsFrame) {
+	if frame.IsAck() {
+		return
+	}
+
+	var ss []http2.Setting
+	frame.ForeachSetting(func(setting http2.Setting) error {
+		ss = append(ss, setting)
+		return nil
+	})
+	s.controlBuf.put(&settings{ack: true, ss: ss})
+}
+
+func (s *http2Server) WriteHeader(stream *Stream, md metadata.MD) error {
+	panic("implement me")
+}
+
+func (s *http2Server) Write(stream *Stream, data []byte, opts *Options) error {
+	panic("implement me")
+}
+
+func (s *http2Server) WriteStatus(stream *Stream, statusCode codes.Code, statusDesc string) error {
+	panic("implement me")
+}
+
+func (s *http2Server) Push(stream *Stream, data []byte, flags http2.Flags) error {
+	panic("implement me")
+}
+
+func (s *http2Server) RemoteAddr() net.Addr {
+	panic("implement me")
+}
+
+func (s *http2Server) Drain() {
+	panic("implement me")
 }
 
 func newHttp2Server(conn net.Conn, config *ServerConfig) (_ ServerTransport, err error) {
@@ -220,4 +316,26 @@ func (s *http2Server) applySetting(ss []http2.Setting) {
 			s.maxStreams = set.Val
 		}
 	}
+}
+
+func (s *http2Server) closeStream(stream *Stream) {
+	s.mu.Lock()
+	delete(s.activeStreams, stream.id)
+
+	if s.state == draining && len(s.activeStreams) == 0 {
+		defer s.Close()
+	}
+	s.mu.Unlock()
+	stream.cancel()
+	stream.mu.Lock()
+	if stream.state == streamDone {
+		stream.mu.Unlock()
+		return
+	}
+	stream.state = streamDone
+	stream.mu.Unlock()
+}
+
+func (s *http2Server) handleData(frame *http2.DataFrame) {
+	
 }
