@@ -2,8 +2,8 @@ package http2
 
 import (
 	"context"
-	"github.com/vanga-top/skyline-foundation/webserver/codes"
-	"github.com/vanga-top/skyline-foundation/webserver/metadata"
+	"github.com/vanga-top/skyline-foundation/h2server/codes"
+	"github.com/vanga-top/skyline-foundation/h2server/metadata"
 	"golang.org/x/net/http2"
 	"io"
 	url2 "net/url"
