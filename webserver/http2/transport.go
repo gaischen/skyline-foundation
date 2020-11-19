@@ -1,6 +1,12 @@
 package http2
 
-import "sync"
+import (
+	"github.com/vanga-top/skyline-foundation/webserver/codes"
+	"github.com/vanga-top/skyline-foundation/webserver/metadata"
+	"golang.org/x/net/http2"
+	"net"
+	"sync"
+)
 
 type item interface {
 	item()
@@ -59,6 +65,20 @@ const (
 )
 
 type ServerTransport interface {
+	SetId(id string)
+	HandleStream(func(stream *Stream))
+	WriteHeader(s *Stream, md metadata.MD) error
+	Write(s *Stream, data []byte, opts *Options) error
+	WriteStatus(s *Stream, statusCode codes.Code, statusDesc string) error
+	Push(s *Stream, data []byte, flags http2.Flags) error
+	Close() error
+	RemoteAddr() net.Addr
+	Drain()
+}
+
+type Options struct {
+	Last  bool
+	Delay bool
 }
 
 type clientTransport interface {
