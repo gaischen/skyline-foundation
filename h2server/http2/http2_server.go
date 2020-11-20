@@ -337,6 +337,6 @@ func (s *http2Server) closeStream(stream *Stream) {
 }
 
 func (s *http2Server) handleData(frame *http2.DataFrame) {
-	size := frame.Header().Length
+	//size := frame.Header().Length
 
 }
