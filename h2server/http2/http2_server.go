@@ -96,7 +96,8 @@ func (s *http2Server) HandleStream(handle func(stream *Stream)) {
 		}
 		switch frame := frame.(type) {
 		case *http2.MetaHeadersFrame:
-
+		case *http2.SettingsFrame:
+		case *http2.GoAwayFrame:
 		case *http2.DataFrame:
 			s.handleData(frame)
 		}
