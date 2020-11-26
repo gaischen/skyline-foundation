@@ -10,3 +10,7 @@ const (
 	maxMergeTSORequests   = 10000 // should be higher if client is sending requests in burst
 	maxInitClusterRetries = 100
 )
+
+type Client struct {
+
+}
