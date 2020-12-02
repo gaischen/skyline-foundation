@@ -8,7 +8,7 @@ const (
 
 type Config struct {
 	SyncPolicy SyncPolicy
-
+	AutoShrinkPercentage int
 }
 
 type DB struct {
