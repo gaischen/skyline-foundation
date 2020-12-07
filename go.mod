@@ -12,6 +12,7 @@ require (
 	github.com/pingcap/kvproto v0.0.0-20201123082133-2f1a3bc78fc9
 	github.com/pkg/errors v0.9.1
 	go.etcd.io/etcd v3.3.25+incompatible
+	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	google.golang.org/grpc v1.33.2
 )
