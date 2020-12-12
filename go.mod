@@ -8,6 +8,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
+	github.com/lucas-clemente/quic-go v0.19.3
 	github.com/pingcap/errors v0.11.4
 	github.com/pingcap/kvproto v0.0.0-20201123082133-2f1a3bc78fc9
 	github.com/pkg/errors v0.9.1
