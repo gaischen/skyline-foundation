@@ -60,5 +60,7 @@ type Session interface {
 	AcceptStream(ctx context.Context) (Stream, error)
 	//returns the next unidirectional stream opened by the peer, blocking until one is available.
 	AcceptUniStream(ctx context.Context) (ReceiveStream, error)
-	
+	OpenStream() (Stream, error)
+	OpenStreamSync(ctx context.Context) (Stream, error)
+	OpenUniStream() (SendStream, error)
 }
