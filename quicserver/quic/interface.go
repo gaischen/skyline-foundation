@@ -2,8 +2,10 @@ package quic
 
 import (
 	"context"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"io"
+	"net"
 	"time"
 )
 
@@ -55,6 +57,8 @@ type StreamError interface {
 	ErrorCode() ErrorCode
 }
 
+type ConnectionState = handshake.ConnectionState
+
 // A Session is a QUIC connection between two peers.
 type Session interface {
 	AcceptStream(ctx context.Context) (Stream, error)
@@ -63,4 +67,28 @@ type Session interface {
 	OpenStream() (Stream, error)
 	OpenStreamSync(ctx context.Context) (Stream, error)
 	OpenUniStream() (SendStream, error)
+	OpenUniStreamSync(ctx context.Context) (SendStream, error)
+	LocalAddr() net.Addr
+	RemoteAddr() net.Addr
+	CloseWithError(code ErrorCode, msg string) error
+	Context() context.Context
+	ConnectionState() ConnectionState
+}
+
+// An EarlySession is a session that is handshaking.
+type EarlySession interface {
+	Session
+	HandshakeComplete() context.Context
+}
+
+type Config struct {
+	Versions           []VersionNumber
+	ConnectionIDLength int
+	HandshakeTimeout   time.Duration
+	MaxIdleTimeout     time.Duration
+	AcceptToken        func(clientAddr net.Addr, token *Token) bool
+	TokenStore
+	// MaxReceiveStreamFlowControlWindow is the maximum stream-level flow control window for receiving data.
+	// If this value is zero, it will default to 1 MB for the server and 6 MB for the client.
+	NaxReceiveStreamFlowControlWindow uint64
 }
