@@ -2,9 +2,9 @@ package quic
 
 import (
 	"context"
-	"github.com/lucas-clemente/quic-go/logging"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
 	"io"
 	"net"
 	"time"
@@ -100,4 +100,25 @@ type Config struct {
 	StatelessResetKey []byte
 	KeepAlive bool
 	Tracer    logging.Tracer
+}
+
+// A Listener for incoming QUIC connections
+type Listener interface {
+	// Close the server. All active sessions will be closed.
+	Close() error
+	// Addr returns the local network addr that the server is listening on.
+	Addr() net.Addr
+	// Accept returns new sessions. It should be called in a loop.
+	Accept(context.Context) (Session, error)
+}
+
+// An EarlyListener listens for incoming QUIC connections,
+// and returns them before the handshake completes.
+type EarlyListener interface {
+	// Close the server. All active sessions will be closed.
+	Close() error
+	// Addr returns the local network addr that the server is listening on.
+	Addr() net.Addr
+	// Accept returns new early sessions. It should be called in a loop.
+	Accept(context.Context) (EarlySession, error)
 }
