@@ -2,6 +2,7 @@ package quic
 
 import (
 	"context"
+	"github.com/lucas-clemente/quic-go/logging"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"io"
@@ -91,4 +92,12 @@ type Config struct {
 	// MaxReceiveStreamFlowControlWindow is the maximum stream-level flow control window for receiving data.
 	// If this value is zero, it will default to 1 MB for the server and 6 MB for the client.
 	NaxReceiveStreamFlowControlWindow uint64
+	// MaxReceiveConnectionFlowControlWindow is the connection-level flow control window for receiving data.
+	// If this value is zero, it will default to 1.5 MB for the server and 15 MB for the client.
+	MaxReceiveConnectionFlowControlWindow uint64
+	MaxIncomingStreams int64
+	MaxIncomingUniStreams int64
+	StatelessResetKey []byte
+	KeepAlive bool
+	Tracer    logging.Tracer
 }
