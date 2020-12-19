@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/kvproto/pkg/pdpb"
 	"time"
