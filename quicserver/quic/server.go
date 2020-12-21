@@ -18,11 +18,20 @@ type packetHandler interface {
 	handlePacket(packet *receivedPacket)
 	shutdown()
 	destroy(error)
-	getPerspective()
+	getPerspective() protocol.Perspective
+}
+
+type unknownPacketHandler interface {
+	handlePacket(*receivedPacket)
+	setCloseError(error)
 }
 
 type packetHandlerManager interface {
 	AddWithConnID(protocol.ConnectionID, protocol.ConnectionID, func() packetHandler) bool
+	Destroy() error
+	sessionRunner
+	SetServer(unknownPacketHandler)
+	CloseServer()
 }
 
 type basicServer struct {
@@ -37,4 +46,17 @@ type basicServer struct {
 	createdPacketConn bool
 	tokenGenerator    *handshake.TokenGenerator
 	zeroRTTQueue      *zeroRTTQueue
+	sessionHandler    packetHandlerManager
+	receivePackets    chan *receivedPacket
+	newSession        func(
+		sendConn,
+		sessionRunner,
+		protocol.ConnectionID,  /* original dest connection ID */
+		*protocol.ConnectionID, /* retry src connection ID */
+		protocol.ConnectionID,  /* client dest connection ID */
+		protocol.ConnectionID,  /* destination connection ID */
+		protocol.ConnectionID,  /* source connection ID */
+		protocol.StatelessResetToken,
+		
+	)
 }

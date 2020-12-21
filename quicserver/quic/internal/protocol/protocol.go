@@ -10,3 +10,5 @@ const (
 	ECT0              // 10
 	ECNCE             // 11
 )
+
+type StatelessResetToken [16]byte
