@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils"
 	"net"
 	"sync"
 )
@@ -34,6 +36,17 @@ type packetHandlerManager interface {
 	CloseServer()
 }
 
+type quicSession interface {
+	EarlySession
+	earlySessionReady() <-chan struct{}
+	handlePacket(*receivedPacket)
+	GetVersion() protocol.VersionNumber
+	getPerspective() protocol.Perspective
+	run() error
+	destroy(error)
+	shutdown()
+}
+
 type basicServer struct {
 	mutex               sync.Mutex
 	acceptEarlySessions bool
@@ -57,6 +70,22 @@ type basicServer struct {
 		protocol.ConnectionID,  /* destination connection ID */
 		protocol.ConnectionID,  /* source connection ID */
 		protocol.StatelessResetToken,
-		
-	)
+		*Config,
+		*tls.Config,
+		*handshake.TokenGenerator,
+		bool, /* enable 0-RTT */
+		logging.ConnectionTracer,
+		utils.Logger,
+		protocol.VersionNumber,
+	) quicSession
+
+	serverError error
+	errorChan   chan struct{}
+	closed      bool
+	running     chan struct{}
+
+	sessionQueue    chan quicSession
+	sessionQueueLen int32 // to be used as an atomic
+
+	logger utils.Logger
 }
