@@ -12,3 +12,5 @@ const (
 	VersionDraft29  VersionNumber = 0xff00001d
 	VersionDraft32  VersionNumber = 0xff000020
 )
+
+var SupportedVersions = []VersionNumber{VersionTLS}

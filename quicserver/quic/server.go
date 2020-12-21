@@ -41,6 +41,7 @@ func listen(conn *net.UDPConn, tlsConf *tls.Config, config *Config, early bool) 
 	if err := validateConfig(config); err != nil {
 		return nil, err
 	}
+
 	return nil, nil
 }
 
