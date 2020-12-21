@@ -91,7 +91,7 @@ type Config struct {
 	TokenStore
 	// MaxReceiveStreamFlowControlWindow is the maximum stream-level flow control window for receiving data.
 	// If this value is zero, it will default to 1 MB for the server and 6 MB for the client.
-	NaxReceiveStreamFlowControlWindow uint64
+	MaxReceiveStreamFlowControlWindow uint64
 	// MaxReceiveConnectionFlowControlWindow is the connection-level flow control window for receiving data.
 	// If this value is zero, it will default to 1.5 MB for the server and 15 MB for the client.
 	MaxReceiveConnectionFlowControlWindow uint64
