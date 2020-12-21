@@ -1,7 +1,9 @@
 package quic
 
 import (
+	"context"
 	"crypto/tls"
+	"errors"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
@@ -12,7 +14,33 @@ import (
 
 //start listen quic addr
 func ListenAddr(addr string, tlsConfig *tls.Config, config *Config) (Listener, error) {
+	return listenAddr(addr, tlsConfig, config, false)
+}
 
+func listenAddr(addr string, tlsConf *tls.Config, config *Config, acceptEarly bool) (*basicServer, error) {
+	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		return nil, err
+	}
+	serv, err := listen(conn, tlsConf, config, acceptEarly)
+	if err != nil {
+		return nil, err
+	}
+	serv.createdPacketConn = true
+	return serv, nil
+}
+
+func listen(conn *net.UDPConn, tlsConf *tls.Config, config *Config, early bool) (*basicServer, error) {
+	if nil == tlsConf {
+		return nil, errors.New("quic: tls.Config is not set")
+	}
+	if err := validateConfig(config); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -88,4 +116,16 @@ type basicServer struct {
 	sessionQueueLen int32 // to be used as an atomic
 
 	logger utils.Logger
+}
+
+func (b *basicServer) Close() error {
+	panic("implement me")
+}
+
+func (b *basicServer) Addr() net.Addr {
+	panic("implement me")
+}
+
+func (b *basicServer) Accept(ctx context.Context) (Session, error) {
+	panic("implement me")
 }
