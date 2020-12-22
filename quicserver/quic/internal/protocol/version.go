@@ -14,3 +14,19 @@ const (
 )
 
 var SupportedVersions = []VersionNumber{VersionTLS}
+
+
+// IsValidVersion says if the version is known to quic-go
+func IsValidVersion(v VersionNumber) bool {
+	return v == VersionTLS || IsSupportedVersion(SupportedVersions, v)
+}
+
+// IsSupportedVersion returns true if the server supports this version
+func IsSupportedVersion(supported []VersionNumber, v VersionNumber) bool {
+	for _, t := range supported {
+		if t == v {
+			return true
+		}
+	}
+	return false
+}

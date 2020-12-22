@@ -20,6 +20,13 @@ func validateConfig(config *Config) error {
 
 func populateServerConfig(config *Config) *Config {
 	config = populateConfig(config)
+	if config.ConnectionIDLength == 0 {
+		config.ConnectionIDLength = protocol.DefaultConnectionIDLength
+	}
+	if config.AcceptToken == nil {
+		config.AcceptToken = defaultAcceptToken
+	}
+	return config
 }
 
 func populateConfig(config *Config) *Config {

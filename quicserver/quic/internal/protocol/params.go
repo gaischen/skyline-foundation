@@ -19,3 +19,14 @@ const DefaultMaxIncomingStreams = 100
 
 // DefaultMaxIncomingUniStreams is the maximum number of unidirectional streams that a peer may open
 const DefaultMaxIncomingUniStreams = 100
+
+
+// DefaultConnectionIDLength is the connection ID length that is used for multiplexed connections
+// if no other value is configured.
+const DefaultConnectionIDLength = 4
+
+// TokenValidity is the duration that a (non-retry) token is considered valid
+const TokenValidity = 24 * time.Hour
+
+// RetryTokenValidity is the duration that a retry token is considered valid
+const RetryTokenValidity = 10 * time.Second

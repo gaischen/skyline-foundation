@@ -4,13 +4,36 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils"
 	"net"
 	"sync"
+	"time"
 )
+
+var defaultAcceptToken = func(clientAddr net.Addr, token *Token) bool {
+	if token == nil {
+		return false
+	}
+	validity := protocol.TokenValidity
+	if token.IsRetryToken {
+		validity = protocol.RetryTokenValidity
+	}
+
+	if time.Now().After(token.SentTime.Add(validity)) {
+		return false
+	}
+	var sourceAddr string
+	if udpAddr, ok := clientAddr.(*net.UDPAddr); ok {
+		sourceAddr = udpAddr.IP.String()
+	} else {
+		sourceAddr = clientAddr.String()
+	}
+	return sourceAddr == token.RemoteAddr
+}
 
 //start listen quic addr
 func ListenAddr(addr string, tlsConfig *tls.Config, config *Config) (Listener, error) {
@@ -41,6 +64,13 @@ func listen(conn *net.UDPConn, tlsConf *tls.Config, config *Config, early bool) 
 	if err := validateConfig(config); err != nil {
 		return nil, err
 	}
+	config = populateServerConfig(config)
+	for _, v := range config.Versions {
+		if !protocol.IsValidVersion(v) {
+			return nil, fmt.Errorf("%s is not a valid quic version", v)
+		}
+	}
+	//todo
 
 	return nil, nil
 }
