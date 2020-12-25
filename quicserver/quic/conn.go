@@ -1,9 +1,11 @@
 package quic
 
 import (
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"io"
 	"net"
 	"syscall"
+	"time"
 )
 
 type connection interface {
@@ -28,6 +30,7 @@ func wrapConn(pc net.PacketConn) (connection, error) {
 	if !ok {
 		return &basicConn{pc}, nil
 	}
+	return newConn(c)
 }
 
 type basicConn struct {
@@ -36,6 +39,17 @@ type basicConn struct {
 
 var _ connection = &basicConn{}
 
-func (b *basicConn) ReadPacket() (*receivedPacket, error) {
-	
+func (c *basicConn) ReadPacket() (*receivedPacket, error) {
+	buffer := getPacketBuffer()
+	buffer.Data = buffer.Data[:protocol.MaxReceivePacketSize]
+	n, addr, err := c.PacketConn.ReadFrom(buffer.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &receivedPacket{
+		remoteAddr: addr,
+		rcvTime:    time.Now(),
+		data:       buffer.Data[:n],
+		buffer:     buffer,
+	}, nil
 }
