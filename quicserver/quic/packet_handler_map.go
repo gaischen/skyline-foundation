@@ -26,7 +26,7 @@ type packetHandlerMap struct {
 	listening chan struct{}
 	closed    bool
 
-	deleteRetriedSessionsAfter time.Duration
+	deleteRetiredSessionsAfter time.Duration
 
 	statelessResetEnabled bool
 	statelessResetMutex   sync.Mutex
@@ -36,12 +36,28 @@ type packetHandlerMap struct {
 	logger utils.Logger
 }
 
-func (h *packetHandlerMap) AddWithConnID(id protocol.ConnectionID, id2 protocol.ConnectionID, f func() packetHandler) bool {
-	panic("implement me")
+func (h *packetHandlerMap) AddWithConnID(clientDestConnID protocol.ConnectionID, newConnID protocol.ConnectionID, fn func() packetHandler) bool {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if _, ok := h.handlers[string(clientDestConnID)]; ok {
+		h.logger.Debugf("Not adding connection ID %s for a new session, as it already exists.", clientDestConnID)
+		return false
+	}
+
+	sess := fn()
+	h.handlers[string(clientDestConnID)] = sess
+	h.handlers[string(newConnID)] = sess
+	h.logger.Debugf("Adding connection IDs %s and %s for a new session.", clientDestConnID, newConnID)
+	return true
 }
 
 func (h *packetHandlerMap) Destroy() error {
-	panic("implement me")
+	if err := h.conn.Close(); err != nil {
+		return err
+	}
+	<-h.listening // wait until listening returns
+	return nil
 }
 
 func (h *packetHandlerMap) Add(id protocol.ConnectionID, handler packetHandler) bool {
@@ -52,6 +68,9 @@ func (h *packetHandlerMap) Add(id protocol.ConnectionID, handler packetHandler) 
 		h.logger.Debugf("Not adding connection ID %s, as it already exists.", id)
 		return false
 	}
+	h.handlers[string(id)] = handler
+	h.logger.Debugf("Adding connection ID %s", id)
+	return true
 }
 
 func (h *packetHandlerMap) GetStatelessResetToken(id protocol.ConnectionID) protocol.StatelessResetToken {
@@ -59,39 +78,103 @@ func (h *packetHandlerMap) GetStatelessResetToken(id protocol.ConnectionID) prot
 }
 
 func (h *packetHandlerMap) Retry(id protocol.ConnectionID) {
-	panic("implement me")
+	h.logger.Debugf("Retiring connection ID %s in %s.", id, h.deleteRetiredSessionsAfter)
+	time.AfterFunc(h.deleteRetiredSessionsAfter, func() {
+		h.mutex.Lock()
+		delete(h.handlers, string(id))
+		h.mutex.Unlock()
+		h.logger.Debugf("Removing connection ID %s after it has been retired.", id)
+	})
 }
 
 func (h *packetHandlerMap) Remove(id protocol.ConnectionID) {
-	panic("implement me")
+	h.mutex.Lock()
+	delete(h.handlers, string(id))
+	h.mutex.Unlock()
+	h.logger.Debugf("Removing connection ID %s.", id)
 }
 
 func (h *packetHandlerMap) ReplaceWithClosed(id protocol.ConnectionID, handler packetHandler) {
-	panic("implement me")
+	h.mutex.Lock()
+	h.handlers[string(id)] = handler
+	h.mutex.Unlock()
+	h.logger.Debugf("Replacing session for connection ID %s with a closed session.", id)
+
+	time.AfterFunc(h.deleteRetiredSessionsAfter, func() {
+		h.mutex.Lock()
+		handler.shutdown()
+		delete(h.handlers, string(id))
+		h.mutex.Unlock()
+		h.logger.Debugf("Removing connection ID %s for a closed session after it has been retired.", id)
+	})
 }
 
 func (h *packetHandlerMap) AddResetToken(token protocol.StatelessResetToken, handler packetHandler) {
-	panic("implement me")
+	h.mutex.Lock()
+	h.resetTokens[token] = handler
+	h.mutex.Unlock()
 }
 
 func (h *packetHandlerMap) RemoveResetToken(token protocol.StatelessResetToken) {
-	panic("implement me")
+	h.mutex.Lock()
+	delete(h.resetTokens, token)
+	h.mutex.Unlock()
 }
 
 func (h *packetHandlerMap) SetServer(handler unknownPacketHandler) {
-	panic("implement me")
+	h.mutex.Lock()
+	h.server = handler
+	h.mutex.Unlock()
 }
 
 func (h *packetHandlerMap) CloseServer() {
-	panic("implement me")
+	h.mutex.Lock()
+	if h.server == nil {
+		h.mutex.Unlock()
+		return
+	}
+	h.server = nil
+	var wg sync.WaitGroup
+	for _, handler := range h.handlers {
+		if handler.getPerspective() == protocol.PerspectiveServer {
+			wg.Add(1)
+			go func(handler packetHandler) {
+				// blocks until the CONNECTION_CLOSE has been sent and the run-loop has stopped
+				handler.shutdown()
+				wg.Done()
+			}(handler)
+		}
+	}
+	h.mutex.Unlock()
+	wg.Wait()
 }
 
 func (h *packetHandlerMap) listen() {
-
+	defer close(h.listening)
+	for {
+		p, err := h.conn.ReadPacket()
+		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+			h.logger.Debugf("Temporary error reading from conn: %w", err)
+			continue
+		}
+		if err != nil {
+			h.close(err)
+			return
+		}
+		h.handlePacket(p)
+	}
 }
 
 func (h *packetHandlerMap) logUsage() {
 
+}
+
+func (h *packetHandlerMap) close(err error) {
+
+}
+
+func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
+	
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
@@ -119,7 +202,7 @@ func newPacketHandlerMap(c net.PacketConn,
 		listening:                  make(chan struct{}),
 		handlers:                   make(map[string]packetHandler),
 		resetTokens:                make(map[protocol.StatelessResetToken]packetHandler),
-		deleteRetriedSessionsAfter: protocol.RetiredConnectionIDDeleteTimeout,
+		deleteRetiredSessionsAfter: protocol.RetiredConnectionIDDeleteTimeout,
 		statelessResetEnabled:      len(statelessResetKey) > 0,
 		statelessResetHasher:       hmac.New(sha256.New, statelessResetKey),
 		tracer:                     tracer,
