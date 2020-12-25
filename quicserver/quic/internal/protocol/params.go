@@ -33,3 +33,7 @@ const TokenValidity = 24 * time.Hour
 
 // RetryTokenValidity is the duration that a retry token is considered valid
 const RetryTokenValidity = 10 * time.Second
+
+// RetiredConnectionIDDeleteTimeout is the time we keep closed sessions around in order to retransmit the CONNECTION_CLOSE.
+// after this time all information about the old connection will be deleted
+const RetiredConnectionIDDeleteTimeout = 5 * time.Second

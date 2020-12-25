@@ -43,13 +43,14 @@ func (c2 *ConnMultiplexer) RemoveConn(conn indexableConn) error {
 	panic("implement me")
 }
 
+
 func getMultiplexer() multiplexer {
 	connMuxerOnce.Do(func() {
 		connMuxer = &ConnMultiplexer{
-			conns: make(map[string]connManager),
-			logger: utils.DefaultLogger.WithPrefix("muxer"),
-
-
+			conns:                   make(map[string]connManager),
+			logger:                  utils.DefaultLogger.WithPrefix("muxer"),
+			newPacketHandlerManager: newPacketHandlerMap,
 		}
 	})
+	return connMuxer
 }

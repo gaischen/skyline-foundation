@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils"
 	"golang.org/x/sys/unix"
 	"net"
 	"syscall"
@@ -71,5 +72,33 @@ func (c *ecnConn) ReadPacket() (*receivedPacket, error) {
 }
 
 func newConn(c ECNCapablePacketConn) (*ecnConn, error) {
-
+	rawConn, err := c.SyscallConn()
+	if err != nil {
+		return nil, err
+	}
+	var errIPv4, errIPv6 error
+	if err := rawConn.Control(func(fd uintptr) {
+		errIPv4 = unix.SetsockoptInt(int(fd), unix.IPPROTO_IP, unix.IP_RECVTOS, 1)
+	}); err != nil {
+		return nil, err
+	}
+	if err := rawConn.Control(func(fd uintptr) {
+		errIPv6 = unix.SetsockoptInt(int(fd), unix.IPPROTO_IPV6, unix.IPV6_RECVTCLASS, 1)
+	}); err != nil {
+		return nil, err
+	}
+	switch {
+	case errIPv4 == nil && errIPv6 == nil:
+		utils.DefaultLogger.Debugf("Activation reading of ECN bits for IPv4 and IPv6")
+	case errIPv4 == nil && errIPv6 != nil:
+		utils.DefaultLogger.Debugf("Activating reading of ECN bits for IPv4.")
+	case errIPv4 != nil && errIPv6 == nil:
+		utils.DefaultLogger.Debugf("Activating reading of ECN bits for IPv6.")
+	case errIPv4 != nil && errIPv6 != nil:
+		return nil, errors.New("activating ECN failed for both IPv4 and IPv6")
+	}
+	return &ecnConn{
+		ECNCapablePacketConn: c,
+		oobBuffer:            make([]byte, 128),
+	}, nil
 }
