@@ -8,6 +8,7 @@ import (
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils/wire"
 	"hash"
 	"log"
 	"net"
@@ -174,7 +175,7 @@ func (h *packetHandlerMap) close(err error) {
 }
 
 func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
-	
+	connID, err := wire.ParseConnectionID(p.data, h.connIDLen)
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
