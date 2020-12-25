@@ -2,6 +2,9 @@ package protocol
 
 import "time"
 
+// DesiredReceiveBufferSize is the kernel UDP receive buffer size that we'd like to use.
+const DesiredReceiveBufferSize = (1 << 20) * 2 // 2 MB
+
 // DefaultHandshakeTimeout is the default timeout for a connection until the crypto handshake succeeds.
 const DefaultHandshakeTimeout = 10 * time.Second
 
