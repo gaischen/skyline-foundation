@@ -176,6 +176,14 @@ func (h *packetHandlerMap) close(err error) {
 
 func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
 	connID, err := wire.ParseConnectionID(p.data, h.connIDLen)
+	if err != nil {
+		h.logger.Debugf("error parsing connection ID on packet from %s: %s", p.remoteAddr, err)
+		if h.tracer != nil {
+			h.tracer.DroppedPacket(p.remoteAddr, logging.PacketTypeNotDetermined, p.Size(), logging.PacketDropHeaderParseError)
+		}
+		p.buffer.MaybeRelease()
+		return
+	}
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
