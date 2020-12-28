@@ -187,10 +187,13 @@ func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	if isStatelessReset := h.
+	if isStatelessReset := h.maybeHandleStatelessReset(p.data); isStatelessReset {
+		return
+	}
+
 }
 
-func (h *packetHandlerMap)maybeHandleStatelessReset(data []byte) bool  {
+func (h *packetHandlerMap) maybeHandleStatelessReset(data []byte) bool {
 
 }
 
