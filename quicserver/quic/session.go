@@ -15,6 +15,10 @@ type receivedPacket struct {
 	ecn        protocol.ECN
 }
 
+func (p *receivedPacket) Size() protocol.ByteCount {
+	return protocol.ByteCount(len(p.data))
+}
+
 type sessionRunner interface {
 	Add(protocol.ConnectionID, packetHandler) bool
 	GetStatelessResetToken(protocol.ConnectionID) protocol.StatelessResetToken

@@ -1,5 +1,7 @@
 package protocol
 
+import "fmt"
+
 type ApplicationErrorCode uint64
 
 type ECN uint8
@@ -14,6 +16,36 @@ const (
 type StatelessResetToken [16]byte
 // A ByteCount in QUIC
 type ByteCount uint64
+
+// The PacketType is the Long Header Type
+type PacketType uint8
+
+const (
+	// PacketTypeInitial is the packet type of an Initial packet
+	PacketTypeInitial PacketType = 1 + iota
+	// PacketTypeRetry is the packet type of a Retry packet
+	PacketTypeRetry
+	// PacketTypeHandshake is the packet type of a Handshake packet
+	PacketTypeHandshake
+	// PacketType0RTT is the packet type of a 0-RTT packet
+	PacketType0RTT
+)
+
+func (t PacketType) String() string {
+	switch t {
+	case PacketTypeInitial:
+		return "Initial"
+	case PacketTypeRetry:
+		return "Retry"
+	case PacketTypeHandshake:
+		return "Handshake"
+	case PacketType0RTT:
+		return "0-RTT Protected"
+	default:
+		return fmt.Sprintf("unknown packet type: %d", t)
+	}
+}
+
 
 
 // MaxReceivePacketSize maximum packet size of any QUIC packet, based on

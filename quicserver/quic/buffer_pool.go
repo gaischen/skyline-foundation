@@ -13,6 +13,19 @@ type packetBuffer struct {
 	refCount int
 }
 
+func (b *packetBuffer) MaybeRelease() {
+	if b.refCount == 0 {
+		b.putBack()
+	}
+}
+
+func (b *packetBuffer) putBack() {
+	if cap(b.Data) != int(protocol.MaxReceivePacketSize) {
+		panic("putPacketBuffer called with packet of wrong size!")
+	}
+	bufferPool.Put(b)
+}
+
 var bufferPool sync.Pool
 
 func getPacketBuffer() *packetBuffer {

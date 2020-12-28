@@ -184,6 +184,14 @@ func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
 		p.buffer.MaybeRelease()
 		return
 	}
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if isStatelessReset := h.
+}
+
+func (h *packetHandlerMap)maybeHandleStatelessReset(data []byte) bool  {
+
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
