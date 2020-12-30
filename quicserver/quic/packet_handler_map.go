@@ -83,8 +83,18 @@ func (h *packetHandlerMap) Add(id protocol.ConnectionID, handler packetHandler) 
 	return true
 }
 
-func (h *packetHandlerMap) GetStatelessResetToken(id protocol.ConnectionID) protocol.StatelessResetToken {
-	panic("implement me")
+func (h *packetHandlerMap) GetStatelessResetToken(connID protocol.ConnectionID) protocol.StatelessResetToken {
+	var token protocol.StatelessResetToken
+	if !h.statelessResetEnabled {
+		rand.Read(token[:])
+		return token
+	}
+	h.statelessResetMutex.Lock()
+	h.statelessResetHasher.Write(connID.Bytes())
+	copy(token[:], h.statelessResetHasher.Sum(nil))
+	h.statelessResetHasher.Reset()
+	h.statelessResetMutex.Unlock()
+	return token
 }
 
 func (h *packetHandlerMap) Retry(id protocol.ConnectionID) {
@@ -238,7 +248,9 @@ func (h *packetHandlerMap) maybeSendStatelessReset(p *receivedPacket, connID pro
 	data := make([]byte, protocol.MinStatelessResetSize-16, protocol.MinStatelessResetSize)
 	rand.Read(data)
 	data = append(data, token[:]...)
-	
+	if _, err := h.conn.WriteTo(data, p.remoteAddr); err != nil {
+		h.logger.Debugf("Error sending Stateless Reset: %s", err)
+	}
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
