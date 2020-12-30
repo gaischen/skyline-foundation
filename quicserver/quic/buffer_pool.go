@@ -26,6 +26,21 @@ func (b *packetBuffer) putBack() {
 	bufferPool.Put(b)
 }
 
+func (b *packetBuffer) Release() {
+	b.Decrement()
+	if b.refCount != 0 {
+		panic("packetBuffer refCount not zero")
+	}
+	b.putBack()
+}
+
+func (b *packetBuffer) Decrement() {
+	b.refCount--
+	if b.refCount < 0 {
+		panic("negative packetBuffer refCount")
+	}
+}
+
 var bufferPool sync.Pool
 
 func getPacketBuffer() *packetBuffer {

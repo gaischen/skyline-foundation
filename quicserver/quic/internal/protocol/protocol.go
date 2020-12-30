@@ -53,3 +53,6 @@ func (t PacketType) String() string {
 // UDP adds an additional 8 bytes.  This is a total overhead of 48 bytes.
 // Ethernet's max packet size is 1500 bytes,  1500 - 48 = 1452.
 const MaxReceivePacketSize ByteCount = 1452
+
+// MinStatelessResetSize is the minimum size of a stateless reset packet that we send
+const MinStatelessResetSize = 1 /* first byte */ + 20 /* max. conn ID length */ + 4 /* max. packet number length */ + 1 /* min. payload length */ + 16 /* token */

@@ -2,6 +2,7 @@ package quic
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -15,6 +16,14 @@ import (
 	"sync"
 	"time"
 )
+
+type statelessResetErr struct {
+	token protocol.StatelessResetToken
+}
+
+func (e statelessResetErr) Error() string {
+	return fmt.Sprintf("received a stateless reset with token %x", e.token)
+}
 
 type packetHandlerMap struct {
 	mutex       sync.Mutex
@@ -190,10 +199,46 @@ func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
 	if isStatelessReset := h.maybeHandleStatelessReset(p.data); isStatelessReset {
 		return
 	}
-
+	if handler, ok := h.handlers[string(connID)]; ok {
+		handler.handlePacket(p)
+		return
+	}
+	if p.data[0]&0x80 == 0 {
+		go h.maybeSendStatelessReset(p, connID)
+	}
 }
 
 func (h *packetHandlerMap) maybeHandleStatelessReset(data []byte) bool {
+	if data[0]&0x80 != 0 {
+		return false
+	}
+	if len(data) < 17 /* type byte + 16 bytes for the reset token */ {
+		return false
+	}
+	var token protocol.StatelessResetToken
+	copy(token[:], data[len(data)-16:])
+	if sess, ok := h.resetTokens[token]; ok {
+		h.logger.Debugf("Received a stateless reset with token %#x. Closing session.", token)
+		go sess.destroy(statelessResetErr{token: token})
+		return true
+	}
+	return false
+}
+
+func (h *packetHandlerMap) maybeSendStatelessReset(p *receivedPacket, connID protocol.ConnectionID) {
+	defer p.buffer.Release()
+	if !h.statelessResetEnabled {
+		return
+	}
+	if len(p.data) <= protocol.MinStatelessResetSize {
+		return
+	}
+	token := h.GetStatelessResetToken(connID)
+	h.logger.Debugf("Sending stateless reset to %s (connection ID: %s). Token: %#x", p.remoteAddr, connID, token)
+	data := make([]byte, protocol.MinStatelessResetSize-16, protocol.MinStatelessResetSize)
+	rand.Read(data)
+	data[0] = append(data, token[:]...)
+
 
 }
 
