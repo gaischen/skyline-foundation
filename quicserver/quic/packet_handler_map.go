@@ -186,11 +186,54 @@ func (h *packetHandlerMap) listen() {
 }
 
 func (h *packetHandlerMap) logUsage() {
+	ticker := time.NewTicker(2 * time.Second)
+	var printedZero bool
+	for {
+		select {
+		case <-h.listening:
+			return
+		case <-ticker.C:
+		}
 
+		h.mutex.Lock()
+		numHandlers := len(h.handlers)
+		numTokens := len(h.resetTokens)
+		h.mutex.Unlock()
+		// If the number tracked handlers and tokens is zero, only print it a single time.
+		hasZero := numHandlers == 0 && numTokens == 0
+		if !hasZero || (hasZero && !printedZero) {
+			h.logger.Debugf("Tracking %d connection IDs and %d reset tokens.\n", numHandlers, numTokens)
+			printedZero = false
+			if hasZero {
+				printedZero = true
+			}
+		}
+	}
 }
 
-func (h *packetHandlerMap) close(err error) {
+func (h *packetHandlerMap) close(e error) error {
+	h.mutex.Lock()
+	if h.closed {
+		h.mutex.Unlock()
+		return nil
+	}
 
+	var wg sync.WaitGroup
+	for _, handler := range h.handlers {
+		wg.Add(1)
+		go func(handler packetHandler) {
+			handler.destroy(e)
+			wg.Done()
+		}(handler)
+	}
+
+	if h.server != nil {
+		h.server.setCloseError(e)
+	}
+	h.closed = true
+	h.mutex.Unlock()
+	wg.Wait()
+	return getMultiplexer().RemoveConn(h.conn)
 }
 
 func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
@@ -215,7 +258,13 @@ func (h *packetHandlerMap) handlePacket(p *receivedPacket) {
 	}
 	if p.data[0]&0x80 == 0 {
 		go h.maybeSendStatelessReset(p, connID)
+		return
 	}
+	if h.server == nil {
+		h.logger.Debugf("received a packet with an unexpected connection ID %s", connID)
+		return
+	}
+	h.server.handlePacket(p)
 }
 
 func (h *packetHandlerMap) maybeHandleStatelessReset(data []byte) bool {
