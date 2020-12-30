@@ -237,9 +237,8 @@ func (h *packetHandlerMap) maybeSendStatelessReset(p *receivedPacket, connID pro
 	h.logger.Debugf("Sending stateless reset to %s (connection ID: %s). Token: %#x", p.remoteAddr, connID, token)
 	data := make([]byte, protocol.MinStatelessResetSize-16, protocol.MinStatelessResetSize)
 	rand.Read(data)
-	data[0] = append(data, token[:]...)
-
-
+	data = append(data, token[:]...)
+	
 }
 
 var _ packetHandlerManager = &packetHandlerMap{}
