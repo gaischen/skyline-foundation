@@ -1,6 +1,7 @@
 package quic
 
 import (
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"sync"
 	"time"
 )
@@ -16,4 +17,9 @@ type zeroRTTQueue struct {
 	queueDuration time.Duration
 }
 
-
+func newZeroRTTQueue() *zeroRTTQueue {
+	return &zeroRTTQueue{
+		queue:         make(map[string]*zeroRTTQueueEntry),
+		queueDuration: protocol.Max0RTTQueueingDuration,
+	}
+}

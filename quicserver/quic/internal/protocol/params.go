@@ -37,3 +37,9 @@ const RetryTokenValidity = 10 * time.Second
 // RetiredConnectionIDDeleteTimeout is the time we keep closed sessions around in order to retransmit the CONNECTION_CLOSE.
 // after this time all information about the old connection will be deleted
 const RetiredConnectionIDDeleteTimeout = 5 * time.Second
+
+// Max0RTTQueueingDuration is the maximum time that we store 0-RTT packets in order to wait for the corresponding Initial to be received.
+const Max0RTTQueueingDuration = 100 * time.Millisecond
+
+// MaxServerUnprocessedPackets is the max number of packets stored in the server that are not yet processed.
+const MaxServerUnprocessedPackets = 1024

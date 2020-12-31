@@ -75,7 +75,23 @@ func listen(conn *net.UDPConn, tlsConf *tls.Config, config *Config, early bool) 
 	if err != nil {
 		return nil, err
 	}
-	tokenGenerator,err:=handshake.NewTokenGenerator(rand.Reader)
+	tokenGenerator, err := handshake.NewTokenGenerator(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	s := &basicServer{
+		conn:           conn,
+		tlsConfig:      tlsConf,
+		config:         config,
+		tokenGenerator: tokenGenerator,
+		sessionHandler: sessionHandler,
+		zeroRTTQueue:   newZeroRTTQueue(),
+		sessionQueue:   make(chan quicSession),
+		errorChan:      make(chan struct{}),
+		running:        make(chan struct{}),
+		receivePackets: make(chan *receivedPacket, protocol.MaxServerUnprocessedPackets),
+		newSession:     newSession,
+	}
 
 	return nil, nil
 }

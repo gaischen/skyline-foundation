@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"fmt"
 	"golang.org/x/crypto/hkdf"
 	"io"
 )
@@ -24,12 +25,28 @@ type tokenProtectorImpl struct {
 	secret []byte
 }
 
-func (t tokenProtectorImpl) NewToken(bytes []byte) ([]byte, error) {
-	panic("implement me")
+func (s *tokenProtectorImpl) NewToken(data []byte) ([]byte, error) {
+	nonce := make([]byte, tokenNonceSize)
+	if _, err := s.rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	aead, aeadNonce, err := s.createAEAD(nonce)
+	if err != nil {
+		return nil, err
+	}
+	return append(nonce, aead.Seal(nil, aeadNonce, data, nil)...), nil
 }
 
-func (t tokenProtectorImpl) DecodeToken(bytes []byte) ([]byte, error) {
-	panic("implement me")
+func (s *tokenProtectorImpl) DecodeToken(p []byte) ([]byte, error) {
+	if len(p) < tokenNonceSize {
+		return nil, fmt.Errorf("token too short: %d", len(p))
+	}
+	nonce := p[:tokenNonceSize]
+	aead, aeadNonce, err := s.createAEAD(nonce)
+	if err != nil {
+		return nil, err
+	}
+	return aead.Open(nil, aeadNonce, p[tokenNonceSize:], nil)
 }
 
 func newTokenProtector(rand io.Reader) (tokenProtector, error) {
