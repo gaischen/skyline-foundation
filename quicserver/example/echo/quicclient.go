@@ -12,7 +12,7 @@ import (
 const addr = "localhost:9999"
 const message = "ccc"
 
-func main() {
+func main01() {
 	session, err := quic.DialAddr(addr, &tls.Config{InsecureSkipVerify: true}, nil)
 	if err != nil {
 		fmt.Println(err)

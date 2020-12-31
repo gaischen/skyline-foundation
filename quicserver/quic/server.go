@@ -2,6 +2,7 @@ package quic
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -70,7 +71,11 @@ func listen(conn *net.UDPConn, tlsConf *tls.Config, config *Config, early bool) 
 			return nil, fmt.Errorf("%s is not a valid quic version", v)
 		}
 	}
-	//todo
+	sessionHandler, err := getMultiplexer().AddConn(conn, config.ConnectionIDLength, config.StatelessResetKey, config.Tracer)
+	if err != nil {
+		return nil, err
+	}
+	tokenGenerator,err:=handshake.NewTokenGenerator(rand.Reader)
 
 	return nil, nil
 }
