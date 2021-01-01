@@ -1,0 +1,57 @@
+package ackhandler
+
+import (
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils/wire"
+	"time"
+)
+
+type Packet struct {
+	PacketNumber    protocol.PacketNumber
+	Frames          []Frame
+	LargestAcked    protocol.PacketNumber
+	Length          protocol.ByteCount
+	EncryptionLevel protocol.EncryptionLevel
+	SendTime        time.Time
+
+	includedInBytesInFlight bool
+	declaredLost            bool
+	skippedPacket           bool
+}
+
+type SentPacketHandler interface {
+	// SentPacket may modify the packet
+	SentPacket(packet *Packet)
+	ReceivedAck(ackFrame *wire.AckFrame, encLevel protocol.EncryptionLevel, recvTime time.Time) error
+	ReceivedBytes(protocol.ByteCount)
+	DropPackets(protocol.EncryptionLevel)
+	ResetForRetry() error
+	SetHandshakeConfirmed()
+
+	// The SendMode determines if and what kind of packets can be sent.
+	SendMode() SendMode
+	// TimeUntilSend is the time when the next packet should be sent.
+	// It is used for pacing packets.
+	TimeUntilSend() time.Time
+	// HasPacingBudget says if the pacer allows sending of a (full size) packet at this moment.
+	HasPacingBudget() bool
+
+	// only to be called once the handshake is complete
+	QueueProbePacket(protocol.EncryptionLevel) bool /* was a packet queued */
+
+	PeekPacketNumber(protocol.EncryptionLevel) (protocol.PacketNumber, protocol.PacketNumberLen)
+	PopPacketNumber(protocol.EncryptionLevel) protocol.PacketNumber
+
+	GetLossDetectionTimeout() time.Time
+	OnLossDetectionTimeout() error
+}
+
+// ReceivedPacketHandler handles ACKs needed to send for incoming packets
+type ReceivedPacketHandler interface {
+	IsPotentiallyDuplicate(protocol.PacketNumber, protocol.EncryptionLevel) bool
+	ReceivedPacket(pn protocol.PacketNumber, ecn protocol.ECN, encLevel protocol.EncryptionLevel, rcvTime time.Time, shouldInstigateAck bool) error
+	DropPackets(protocol.EncryptionLevel)
+
+	GetAlarmTimeout() time.Time
+	GetAckFrame(encLevel protocol.EncryptionLevel, onlyIfQueued bool) *wire.AckFrame
+}

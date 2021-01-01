@@ -3,9 +3,11 @@ package quic
 import (
 	"context"
 	"crypto/tls"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/ackhandler"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/handshake"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/internal/protocol"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/logging"
+	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils"
 	"github.com/vanga-top/skyline-foundation/quicserver/quic/utils/wire"
 	"net"
 	"time"
@@ -67,9 +69,17 @@ type session struct {
 	conn      sendConn
 	sendQueue *sendQueue
 
+	streamsMap      streamManager
+	connIDManager   *connIDManager
+	connIDGenerator *connIDGenerator
 
+	rttStats *utils.RTTStats
+
+	cryptoStreamManager   *CryptoStreamManager
+	sentPacketHandler     ackhandler.SentPacketHandler
+	receivedPacketHandler ackhandler.ReceivedPacketHandler
+	retransmissionQueue   *retransmissionQueue
 }
-
 
 var newSession = func(
 	conn sendConn,
