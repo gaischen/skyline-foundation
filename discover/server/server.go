@@ -6,10 +6,9 @@ import (
 )
 
 type Server interface {
+	protocol.Discover
 	Listen(addr string, port int) (Server, error)
 	Start(serviceConfig *config.ServerConfig) (Server, error)
 	Restart(serviceConfig *config.ServerConfig) (Server, error)
 	Shutdown(gracefully bool) error
-	DiscoverType() protocol.DiscoverType
-
 }
