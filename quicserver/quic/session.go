@@ -81,6 +81,82 @@ type session struct {
 	retransmissionQueue   *retransmissionQueue
 }
 
+func (s session) AcceptStream(ctx context.Context) (Stream, error) {
+	panic("implement me")
+}
+
+func (s session) AcceptUniStream(ctx context.Context) (ReceiveStream, error) {
+	panic("implement me")
+}
+
+func (s session) OpenStream() (Stream, error) {
+	panic("implement me")
+}
+
+func (s session) OpenStreamSync(ctx context.Context) (Stream, error) {
+	panic("implement me")
+}
+
+func (s session) OpenUniStream() (SendStream, error) {
+	panic("implement me")
+}
+
+func (s session) OpenUniStreamSync(ctx context.Context) (SendStream, error) {
+	panic("implement me")
+}
+
+func (s session) LocalAddr() net.Addr {
+	panic("implement me")
+}
+
+func (s session) RemoteAddr() net.Addr {
+	panic("implement me")
+}
+
+func (s session) CloseWithError(code ErrorCode, msg string) error {
+	panic("implement me")
+}
+
+func (s session) Context() context.Context {
+	panic("implement me")
+}
+
+func (s session) ConnectionState() ConnectionState {
+	panic("implement me")
+}
+
+func (s session) HandshakeComplete() context.Context {
+	panic("implement me")
+}
+
+func (s session) earlySessionReady() <-chan struct{} {
+	panic("implement me")
+}
+
+func (s session) handlePacket(packet *receivedPacket) {
+	panic("implement me")
+}
+
+func (s session) GetVersion() protocol.VersionNumber {
+	panic("implement me")
+}
+
+func (s session) getPerspective() protocol.Perspective {
+	panic("implement me")
+}
+
+func (s session) run() error {
+	panic("implement me")
+}
+
+func (s session) destroy(err error) {
+	panic("implement me")
+}
+
+func (s session) shutdown() {
+	panic("implement me")
+}
+
 var newSession = func(
 	conn sendConn,
 	runner sessionRunner,
@@ -94,6 +170,7 @@ var newSession = func(
 	tlsConfig *tls.Config,
 	tokenGenerator *handshake.TokenGenerator,
 	enable0RTT bool,
+	log logging.ConnectionTracer,
 	tracer logging.Tracer,
 	v protocol.VersionNumber,
 ) quicSession {
@@ -110,4 +187,6 @@ var newSession = func(
 		logger:                logger,
 		version:               v,
 	}
+
+	return s
 }
