@@ -12,3 +12,13 @@ type Server interface {
 	Restart(serviceConfig *config.ServerConfig) (Server, error)
 	Shutdown(gracefully bool) error
 }
+
+type basicServer struct {
+	serverID     string
+	addr         string
+	port         int
+	discoverType protocol.DiscoverType
+
+	dataProcessor  *ServerDataProcessor
+	leaderSelector *ServerLeaderSelector
+}
