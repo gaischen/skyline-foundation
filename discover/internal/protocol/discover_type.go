@@ -20,3 +20,20 @@ func (dt DiscoverType) String() string {
 		return "UNKNOWN"
 	}
 }
+
+func (dt DiscoverType) Val() int {
+	return int(dt)
+}
+
+func ParseDiscoverType(tp int) DiscoverType {
+	switch tp {
+	case DISCOVER_CLIENT.Val():
+		return DISCOVER_CLIENT
+	case DISCOVER_SERVER_LEADER.Val():
+		return DISCOVER_SERVER_LEADER
+	case DISCOVER_SERVER_SLAVE.Val():
+		return DISCOVER_SERVER_SLAVE
+	default:
+		panic("no type format for discover type!!!")
+	}
+}

@@ -28,34 +28,40 @@ type basicServer struct {
 }
 
 //
-func NewBasicServer(conf *config.ServerConfig) *Server {
+func NewBasicServer(conf *config.ServerConfig) Server {
 	if conf == nil {
 		conf = config.NewDefaultConfig()
 	}
 
-	return nil
+	discoveryType := protocol.ParseDiscoverType(conf.ServerType)
+
+	s := &basicServer{
+		discoverType: discoveryType,
+	}
+
+	return s
 }
 
-func (b basicServer) DiscoverType() protocol.DiscoverType {
+func (b *basicServer) DiscoverType() protocol.DiscoverType {
 	return b.discoverType
 }
 
-func (b basicServer) ID() string {
+func (b *basicServer) ID() string {
 	return b.serverID
 }
 
-func (b basicServer) Listen(addr string, port int) (Server, error) {
+func (b *basicServer) Listen(addr string, port int) (Server, error) {
 	panic("implement me")
 }
 
-func (b basicServer) Start() (Server, error) {
+func (b *basicServer) Start() (Server, error) {
 	panic("implement me")
 }
 
-func (b basicServer) Restart() (Server, error) {
+func (b *basicServer) Restart() (Server, error) {
 	panic("implement me")
 }
 
-func (b basicServer) Shutdown(gracefully bool) error {
+func (b *basicServer) Shutdown(gracefully bool) error {
 	panic("implement me")
 }
