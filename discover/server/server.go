@@ -8,7 +8,7 @@ import (
 
 type Server interface {
 	protocol.Discover
-	Listen(addr string, port int) (Server, error)
+	Listen(addr string, port int) Server
 	Start() (Server, error)
 	Restart() (Server, error)
 	Shutdown(gracefully bool) error
@@ -50,7 +50,7 @@ func (b *basicServer) ID() string {
 	return b.serverID
 }
 
-func (b *basicServer) Listen(addr string, port int) (Server, error) {
+func (b *basicServer) Listen(addr string, port int) Server {
 	panic("implement me")
 }
 
