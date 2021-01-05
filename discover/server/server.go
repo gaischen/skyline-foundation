@@ -24,6 +24,8 @@ type basicServer struct {
 	mutex sync.Mutex
 	ln    net.Listener
 
+	connChanel map[string]net.Conn //key connID
+
 	conf         *config.ServerConfig
 	serverID     string
 	addr         string
