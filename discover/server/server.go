@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/vanga-top/skyline-foundation/discover/internal/config"
 	"github.com/vanga-top/skyline-foundation/discover/internal/protocol"
 	"net"
@@ -19,6 +20,7 @@ type Server interface {
 
 type basicServer struct {
 	mutex sync.Mutex
+	ln    net.Listener
 
 	conf         *config.ServerConfig
 	serverID     string
@@ -63,7 +65,11 @@ func (b *basicServer) ID() string {
 
 func (b *basicServer) Listen(network string, addr string) Server {
 	ln, err := net.Listen(network, addr)
-
+	if err != nil {
+		fmt.Println(err)
+		panic("error in listen...")
+	}
+	b.ln = ln
 	return b
 }
 
