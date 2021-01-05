@@ -10,6 +10,8 @@ import (
 
 type Server interface {
 	protocol.Discover
+	protocol.LeaderSelector
+	protocol.ServerDataProcessor
 	Listen(network string, addr string) Server
 	Start() (Server, error)
 	Restart() (Server, error)
@@ -27,9 +29,22 @@ type basicServer struct {
 	addr         string
 	network      string
 	discoverType protocol.DiscoverType
+}
 
-	dataProcessor  *ServerDataProcessor
-	leaderSelector *ServerLeaderSelector
+func (b *basicServer) Online(meta protocol.ServiceMeta) error {
+	panic("implement me")
+}
+
+func (b *basicServer) Offline(meta protocol.ServiceMeta) error {
+	panic("implement me")
+}
+
+func (b *basicServer) Register(meta protocol.ServiceMeta) error {
+	panic("implement me")
+}
+
+func (b *basicServer) Remove(meta protocol.ServiceMeta) error {
+	panic("implement me")
 }
 
 func (b *basicServer) startHeartbeat() {
@@ -74,7 +89,9 @@ func (b *basicServer) Listen(network string, addr string) Server {
 }
 
 func (b *basicServer) Start() (Server, error) {
-	panic("implement me")
+
+	go b.startHeartbeat()
+	return b, nil
 }
 
 func (b *basicServer) Restart() (Server, error) {
