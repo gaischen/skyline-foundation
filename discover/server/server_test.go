@@ -23,7 +23,7 @@ func TestBasicServer_Listen(t *testing.T) {
 	if !ok {
 		return
 	}
-	s, err := basicServer.Listen("localhost", 8080).Start()
+	s, err := basicServer.Listen("localhost", "8080").Start()
 	if err != nil {
 		fmt.Println(err)
 	}

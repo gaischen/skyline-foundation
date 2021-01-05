@@ -7,6 +7,8 @@ type ServerConfig struct {
 
 	logPath      string //log 输出地址
 	logFormatter string
+
+	serverList string //获取server list的地址，需要轮询去获取
 }
 
 func NewDefaultConfig() *ServerConfig {
