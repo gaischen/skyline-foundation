@@ -8,3 +8,7 @@ type ServerDataProcessor interface {
 	Register(meta ServiceMeta) error
 	Remove(meta ServiceMeta) error
 }
+
+type ClientDataProcessor interface {
+
+}

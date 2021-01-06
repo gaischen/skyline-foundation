@@ -23,6 +23,7 @@ type Server interface {
 type basicServer struct {
 	mutex sync.Mutex
 	ln    net.Listener
+	wg    sync.WaitGroup
 
 	connChanel map[string]net.Conn //key connID
 
@@ -67,6 +68,7 @@ func NewBasicServer(conf *config.ServerConfig) Server {
 
 	s := &basicServer{
 		discoverType: discoveryType,
+		wg:           sync.WaitGroup{},
 	}
 
 	return s
@@ -91,8 +93,18 @@ func (b *basicServer) Listen(network string, addr string) Server {
 }
 
 func (b *basicServer) Start() (Server, error) {
-
+	b.wg.Add(1)
 	go b.startHeartbeat()
+	go func() {
+		for {
+			conn, err := b.ln.Accept()
+			if err != nil {
+				continue
+			}
+			//conn.Read()
+		}
+	}()
+
 	return b, nil
 }
 
