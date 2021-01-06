@@ -19,14 +19,10 @@ func TestNewBasicServer(t *testing.T) {
 func TestBasicServer_Listen(t *testing.T) {
 	s := NewBasicServer(nil)
 	//s.DiscoverType()
-	basicServer, ok := s.(*basicServer)
+	bsrv, ok := s.(*basicServer)
 	if !ok {
 		return
 	}
-	s, err := basicServer.Listen("localhost", "8080").Start()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-
+	bsrv = bsrv.Listen("localhost", "8080").Start().(*basicServer)
+	bsrv.wg.Wait()
 }

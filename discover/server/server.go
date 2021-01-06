@@ -13,7 +13,7 @@ type Server interface {
 	protocol.LeaderSelector
 	protocol.ServerDataProcessor
 	Listen(network string, addr string) Server
-	Start() (Server, error)
+	Start() Server
 	Restart() (Server, error)
 	Shutdown(gracefully bool) error
 	GetPartner() []Server
@@ -25,7 +25,8 @@ type basicServer struct {
 	ln    net.Listener
 	wg    sync.WaitGroup
 
-	connChanel map[string]net.Conn //key connID
+	connChanel     map[string]net.Conn //key connID 存储client过来的链接
+	partnerChannel map[string]Server   // key serverID
 
 	conf         *config.ServerConfig
 	serverID     string
@@ -92,7 +93,7 @@ func (b *basicServer) Listen(network string, addr string) Server {
 	return b
 }
 
-func (b *basicServer) Start() (Server, error) {
+func (b *basicServer) Start() Server {
 	b.wg.Add(1)
 	go b.startHeartbeat()
 	go func() {
@@ -105,7 +106,7 @@ func (b *basicServer) Start() (Server, error) {
 		}
 	}()
 
-	return b, nil
+	return b
 }
 
 func (b *basicServer) Restart() (Server, error) {
