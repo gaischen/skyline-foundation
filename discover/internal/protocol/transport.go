@@ -9,5 +9,15 @@ type Transport struct {
 	startTime   time.Time
 	endTime     time.Time
 	serviceMeta ServiceMeta
+}
 
+
+func Serialize(transport *Transport) []byte {
+
+	return nil
+}
+
+func Deserialize(data []byte) *Transport {
+
+	return nil
 }
