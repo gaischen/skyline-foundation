@@ -23,6 +23,7 @@ func TestBasicServer_Listen(t *testing.T) {
 	if !ok {
 		return
 	}
-	bsrv = bsrv.Listen("localhost", "8080").Start().(*basicServer)
+	bsrv = bsrv.Listen("tcp", ":8080").Start().(*basicServer)
+	fmt.Println("server start....")
 	bsrv.wg.Wait()
 }

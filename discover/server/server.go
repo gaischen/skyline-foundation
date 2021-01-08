@@ -55,7 +55,7 @@ func (b *basicServer) Remove(meta protocol.ServiceMeta) error {
 }
 
 func (b *basicServer) startHeartbeat() {
-	panic("implement me")
+	//panic("implement me")
 }
 
 func (b *basicServer) GetPartner() []Server {
@@ -113,7 +113,21 @@ func (b *basicServer) Start() Server {
 }
 
 func handleConn(conn net.Conn) {
-
+	br := make([]byte, 1024)
+	ln, err := conn.Read(br)
+	if err != nil {
+		fmt.Println(err)
+		err = conn.Close()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+	fmt.Println("receive packet length:", ln)
+	fmt.Println("receive packet msg:", string(br))
+	conn.Write([]byte("hello..."))
+	conn.Close()
+	return
 }
 
 func (b *basicServer) Restart() (Server, error) {
