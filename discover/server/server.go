@@ -23,6 +23,12 @@ type Server interface {
 
 type serverStatus int8
 
+const (
+	starting serverStatus = iota
+	running
+	stopping
+)
+
 type basicServer struct {
 	mutex sync.Mutex
 	ln    net.Listener
@@ -31,8 +37,8 @@ type basicServer struct {
 	connChanel     map[string]net.Conn //key connID 存储client过来的链接
 	partnerChannel map[string]Server   // key serverID
 	status         chan serverStatus
-	statusCtx      context.Context
-	statusCancelFun   context.CancelFunc
+	ctx            context.Context
+	cancelFunc     context.CancelFunc
 
 	conf         *config.ServerConfig
 	serverID     string
@@ -72,10 +78,14 @@ func NewBasicServer(conf *config.ServerConfig) Server {
 	}
 
 	discoveryType := protocol.ParseDiscoverType(conf.ServerType)
+	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	s := &basicServer{
 		discoverType: discoveryType,
 		wg:           sync.WaitGroup{},
+		ctx:          ctx,
+		cancelFunc:   cancelFunc,
+		status:       make(chan serverStatus),
 	}
 
 	return s
@@ -104,11 +114,24 @@ func (b *basicServer) Start() Server {
 	go b.startHeartbeat()
 	go func() {
 		for {
-			conn, err := b.ln.Accept()
-			if err != nil {
-				continue
+			select {
+			case <-b.ctx.Done():
+				fmt.Println("ctx done...")
+				b.wg.Done()
+				return
+			case s := <-b.status:
+				if s == stopping {
+					fmt.Println("get stat stopping...")
+					b.cancelFunc()
+				}
+			default:
+				fmt.Println("waiting...")
+				conn, err := b.ln.Accept()
+				if err != nil {
+					continue
+				}
+				go handleConn(conn)
 			}
-			go handleConn(conn)
 		}
 	}()
 	return b

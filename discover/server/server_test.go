@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNewBasicServer(t *testing.T) {
@@ -25,5 +26,15 @@ func TestBasicServer_Listen(t *testing.T) {
 	}
 	bsrv = bsrv.Listen("tcp", ":8080").Start().(*basicServer)
 	fmt.Println("server start....")
+
+	//go reqChanStatus(bsrv)
+
 	bsrv.wg.Wait()
+}
+
+func reqChanStatus(bsrv *basicServer) {
+	time.Sleep(3 * time.Second)
+	fmt.Println("send stop....")
+	bsrv.status <- stopping
+	fmt.Println(bsrv.status)
 }
