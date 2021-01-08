@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/vanga-top/skyline-foundation/discover/internal/config"
 	"github.com/vanga-top/skyline-foundation/discover/internal/protocol"
@@ -30,6 +31,8 @@ type basicServer struct {
 	connChanel     map[string]net.Conn //key connID 存储client过来的链接
 	partnerChannel map[string]Server   // key serverID
 	status         chan serverStatus
+	statusCtx      context.Context
+	statusCancelFun   context.CancelFunc
 
 	conf         *config.ServerConfig
 	serverID     string
@@ -108,7 +111,6 @@ func (b *basicServer) Start() Server {
 			go handleConn(conn)
 		}
 	}()
-
 	return b
 }
 
