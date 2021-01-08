@@ -6,6 +6,7 @@ import (
 	"github.com/vanga-top/skyline-foundation/discover/internal/config"
 	"github.com/vanga-top/skyline-foundation/discover/internal/protocol"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -115,44 +116,50 @@ func (b *basicServer) Start() Server {
 	go func() {
 		for {
 			select {
-			case <-b.ctx.Done():
-				fmt.Println("ctx done...")
-				b.wg.Done()
-				return
 			case s := <-b.status:
 				if s == stopping {
-					fmt.Println("get stat stopping...")
-					b.cancelFunc()
+					return
 				}
 			default:
-				fmt.Println("waiting...")
 				conn, err := b.ln.Accept()
 				if err != nil {
 					continue
 				}
-				go handleConn(conn)
+				go b.handleConn(conn)
 			}
 		}
 	}()
 	return b
 }
 
-func handleConn(conn net.Conn) {
-	br := make([]byte, 1024)
-	ln, err := conn.Read(br)
-	if err != nil {
-		fmt.Println(err)
-		err = conn.Close()
+func (b *basicServer) handleConn(conn net.Conn) {
+	select {
+	case <-b.ctx.Done():
+		conn.Close()
+		fmt.Println("ctx done...")
+		return
+	case s := <-b.status:
+		if s == stopping {
+			fmt.Println("get stat stopping...")
+			b.cancelFunc()
+		}
+	default:
+		br := make([]byte, 1024)
+		ln, err := conn.Read(br)
 		if err != nil {
 			fmt.Println(err)
-			return
+			err = conn.Close()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		}
+		fmt.Println("receive packet length:", ln)
+		fmt.Println("receive packet msg:", string(br))
+		conn.Write([]byte("hello..."))
+		conn.Close()
+		return
 	}
-	fmt.Println("receive packet length:", ln)
-	fmt.Println("receive packet msg:", string(br))
-	conn.Write([]byte("hello..."))
-	conn.Close()
-	return
 }
 
 func (b *basicServer) Restart() (Server, error) {
@@ -160,5 +167,11 @@ func (b *basicServer) Restart() (Server, error) {
 }
 
 func (b *basicServer) Shutdown(gracefully bool) error {
-	panic("implement me")
+	if gracefully {
+		b.status <- stopping
+		b.wg.Done()
+		return nil
+	}
+	os.Exit(0)
+	return nil
 }
