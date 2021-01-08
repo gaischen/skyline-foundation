@@ -20,6 +20,8 @@ type Server interface {
 	startHeartbeat()
 }
 
+type serverStatus int8
+
 type basicServer struct {
 	mutex sync.Mutex
 	ln    net.Listener
@@ -27,6 +29,7 @@ type basicServer struct {
 
 	connChanel     map[string]net.Conn //key connID 存储client过来的链接
 	partnerChannel map[string]Server   // key serverID
+	status         chan serverStatus
 
 	conf         *config.ServerConfig
 	serverID     string
@@ -102,11 +105,15 @@ func (b *basicServer) Start() Server {
 			if err != nil {
 				continue
 			}
-			//conn.Read()
+			go handleConn(conn)
 		}
 	}()
 
 	return b
+}
+
+func handleConn(conn net.Conn) {
+
 }
 
 func (b *basicServer) Restart() (Server, error) {
