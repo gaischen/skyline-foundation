@@ -115,6 +115,10 @@ func (b *basicServer) Start() Server {
 	go b.startHeartbeat()
 	go func() {
 		for {
+			if c := recover(); c != nil {
+				fmt.Println(c)
+				return
+			}
 			select {
 			case s := <-b.status:
 				if s == stopping {
@@ -144,6 +148,7 @@ func (b *basicServer) handleConn(conn net.Conn) {
 			b.cancelFunc()
 		}
 	default:
+		defer conn.Close()
 		br := make([]byte, 1024)
 		ln, err := conn.Read(br)
 		if err != nil {
@@ -156,8 +161,8 @@ func (b *basicServer) handleConn(conn net.Conn) {
 		}
 		fmt.Println("receive packet length:", ln)
 		fmt.Println("receive packet msg:", string(br))
-		conn.Write([]byte("hello..."))
-		conn.Close()
+		//conn.Write([]byte("hello..."))
+
 		return
 	}
 }
