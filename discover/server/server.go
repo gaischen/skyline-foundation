@@ -46,6 +46,8 @@ type basicServer struct {
 	addr         string
 	network      string
 	discoverType protocol.DiscoverType
+
+	serverCT *ServerCT //server-client
 }
 
 func (b *basicServer) Online(meta protocol.ServiceMeta) error {
