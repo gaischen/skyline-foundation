@@ -20,6 +20,7 @@ type Server interface {
 	Shutdown(gracefully bool) error
 	GetPartner() []Server
 	startHeartbeat()
+	GetAddr() string
 }
 
 type serverStatus int8
@@ -48,6 +49,10 @@ type basicServer struct {
 	discoverType protocol.DiscoverType
 
 	serverCT *ServerCT //server-client
+}
+
+func (b *basicServer) GetAddr() string {
+	panic("implement me")
 }
 
 func (b *basicServer) Online(meta protocol.ServiceMeta) error {
