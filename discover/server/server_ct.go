@@ -14,7 +14,7 @@ type ServerCT struct {
 }
 
 func NewServerCT(leader Server) *ServerCT {
-	isLe := isLeader(leader)
+	addr, isLe := isLeader(leader)
 	var disType protocol.DiscoverType
 	if isLe {
 		disType = protocol.DISCOVER_SERVER_LEADER
@@ -24,22 +24,25 @@ func NewServerCT(leader Server) *ServerCT {
 	return &ServerCT{
 		Leader:              leader,
 		CurrentDiscoverType: disType,
+		Ipv4:                addr,
 	}
 }
 
-func isLeader(leader Server) bool {
+func isLeader(leader Server) (string, bool) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		panic("error in get ips..")
 	}
-
+	var addr string
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil && ipnet.IP.To4().String() == leader.GetAddr() {
-				return true
+				addr = ipnet.IP.String()
+				return addr, true
+			} else if ipnet.IP.To4() != nil {
+				addr = ipnet.IP.String()
 			}
 		}
 	}
-
-	return false
+	return addr, false
 }
