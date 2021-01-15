@@ -1,6 +1,10 @@
 package protocol
 
-import "time"
+import (
+	"bytes"
+	"encoding/gob"
+	"time"
+)
 
 //内部传输协议
 type Transport struct {
@@ -13,11 +17,15 @@ type Transport struct {
 }
 
 func Serialize(transport *Transport) []byte {
-
-	return nil
+	var result bytes.Buffer
+	encoder := gob.NewEncoder(&result)
+	encoder.Encode(transport)
+	return result.Bytes()
 }
 
 func Deserialize(data []byte) *Transport {
-
-	return nil
+	var transport *Transport
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	decoder.Decode(&transport)
+	return transport
 }
