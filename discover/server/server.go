@@ -52,7 +52,7 @@ type basicServer struct {
 }
 
 func (b *basicServer) GetAddr() string {
-	panic("implement me")
+	return b.addr
 }
 
 func (b *basicServer) Online(meta protocol.ServiceMeta) error {
@@ -87,6 +87,9 @@ func NewBasicServer(conf *config.ServerConfig) Server {
 
 	discoveryType := protocol.ParseDiscoverType(conf.ServerType)
 	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	//todo get addr
+	//addrs, err := net.InterfaceAddrs()
 
 	s := &basicServer{
 		discoverType: discoveryType,

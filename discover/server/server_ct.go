@@ -28,6 +28,12 @@ func NewServerCT(leader Server) *ServerCT {
 	}
 }
 
+//connect to leader server
+func (sct *ServerCT) connect() bool {
+
+	return true
+}
+
 func isLeader(leader Server) (string, bool) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
