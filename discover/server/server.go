@@ -140,6 +140,7 @@ func (b *basicServer) Start() Server {
 			}
 		}
 	}()
+	b.status <- starting //状态变更
 	return b
 }
 
