@@ -5,5 +5,5 @@ type MediaConfig struct {
 	logLevel string
 	rtcMinPort int32
 	rtcMaxPort int32
-	
+
 }
